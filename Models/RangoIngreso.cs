@@ -1,0 +1,15 @@
+﻿namespace SistemacotizacionprestamosAPI.Models
+{
+    public class RangoIngreso
+    {
+        public int IdRangoIngresos { get; set; }
+
+        public decimal MontoMinimo { get; set; }
+
+        public decimal MontoMaximo { get; set; }
+
+        public string Descripcion { get; set; } = "";
+
+        public bool Activo { get; set; }
+    }
+}
