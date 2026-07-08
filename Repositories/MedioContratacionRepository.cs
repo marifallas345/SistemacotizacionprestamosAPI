@@ -5,98 +5,89 @@ using System.Data;
 
 namespace SistemacotizacionprestamosAPI.Repositories
 {
-    public class OcupacionRepository
+    public class MedioContratacionRepository
     {
         private readonly DbContext _context;
 
-        public OcupacionRepository(DbContext context)
+        public MedioContratacionRepository(DbContext context)
         {
             _context = context;
         }
 
-        public List<Ocupacion> Listar()
+        private MedioContratacion Mapear(SqlDataReader dr)
         {
-            List<Ocupacion> lista = new();
+            return new MedioContratacion
+            {
+                IdMedio = Convert.ToInt32(dr["id_medio"]),
+                Nombre = dr["nombre"].ToString()!,
+                Activo = Convert.ToBoolean(dr["activo"])
+            };
+        }
+
+        public List<MedioContratacion> Listar()
+        {
+            List<MedioContratacion> lista = new();
 
             using (SqlConnection conn = _context.CreateConnection())
             {
-                SqlCommand cmd = new SqlCommand("sp_ListarOcupaciones", conn);
-
+                SqlCommand cmd = new SqlCommand("sp_ListarMediosContratacion", conn);
                 cmd.CommandType = CommandType.StoredProcedure;
 
                 conn.Open();
-
                 SqlDataReader dr = cmd.ExecuteReader();
 
                 while (dr.Read())
-                {
-                    lista.Add(new Ocupacion
-                    {
-                        IdOcupacion = Convert.ToInt32(dr["id_ocupacion"]),
-                        Nombre = dr["nombre"].ToString()!,
-                        Activo = Convert.ToBoolean(dr["activo"])
-                    });
-                }
+                    lista.Add(Mapear(dr));
             }
 
             return lista;
         }
 
-        public Ocupacion ObtenerPorId(int id)
+        public MedioContratacion ObtenerPorId(int id)
         {
-            Ocupacion ocupacion = new Ocupacion();
+            MedioContratacion item = new MedioContratacion();
 
             using (SqlConnection conn = _context.CreateConnection())
             {
-                SqlCommand cmd = new SqlCommand("sp_ObtenerOcupacionPorId", conn);
+                SqlCommand cmd = new SqlCommand("sp_ObtenerMedioContratacionPorId", conn);
                 cmd.CommandType = CommandType.StoredProcedure;
-
-                cmd.Parameters.AddWithValue("@OcupacionID", id);
+                cmd.Parameters.AddWithValue("@MedioID", id);
 
                 conn.Open();
-
                 SqlDataReader dr = cmd.ExecuteReader();
 
                 if (dr.Read())
-                {
-                    ocupacion.IdOcupacion = Convert.ToInt32(dr["id_ocupacion"]);
-                    ocupacion.Nombre = dr["nombre"].ToString()!;
-                    ocupacion.Activo = Convert.ToBoolean(dr["activo"]);
-                }
+                    item = Mapear(dr);
             }
 
-            return ocupacion;
+            return item;
         }
 
-        public bool Insertar(Ocupacion ocupacion)
+        public bool Insertar(MedioContratacion item)
         {
             using (SqlConnection conn = _context.CreateConnection())
             {
-                SqlCommand cmd = new SqlCommand("sp_InsertarOcupacion", conn);
-
+                SqlCommand cmd = new SqlCommand("sp_InsertarMedioContratacion", conn);
                 cmd.CommandType = CommandType.StoredProcedure;
 
-                cmd.Parameters.AddWithValue("@Nombre", ocupacion.Nombre);
+                cmd.Parameters.AddWithValue("@Nombre", item.Nombre);
 
                 conn.Open();
-
                 return cmd.ExecuteScalar() != null;
             }
         }
 
-        public bool Actualizar(Ocupacion ocupacion)
+        public bool Actualizar(MedioContratacion item)
         {
             using (SqlConnection conn = _context.CreateConnection())
             {
-                SqlCommand cmd = new SqlCommand("sp_ActualizarOcupacion", conn);
-
+                SqlCommand cmd = new SqlCommand("sp_ActualizarMedioContratacion", conn);
                 cmd.CommandType = CommandType.StoredProcedure;
 
-                cmd.Parameters.AddWithValue("@OcupacionID", ocupacion.IdOcupacion);
-                cmd.Parameters.AddWithValue("@Nombre", ocupacion.Nombre);
+                cmd.Parameters.AddWithValue("@MedioID", item.IdMedio);
+                cmd.Parameters.AddWithValue("@Nombre", item.Nombre);
 
                 conn.Open();
-
                 cmd.ExecuteNonQuery();
                 return true;
             }
@@ -106,14 +97,11 @@ namespace SistemacotizacionprestamosAPI.Repositories
         {
             using (SqlConnection conn = _context.CreateConnection())
             {
-                SqlCommand cmd = new SqlCommand("sp_EliminarLogicoOcupacion", conn);
-
+                SqlCommand cmd = new SqlCommand("sp_EliminarLogicoMedioContratacion", conn);
                 cmd.CommandType = CommandType.StoredProcedure;
-
-                cmd.Parameters.AddWithValue("@OcupacionID", id);
+                cmd.Parameters.AddWithValue("@MedioID", id);
 
                 conn.Open();
-
                 cmd.ExecuteNonQuery();
                 return true;
             }

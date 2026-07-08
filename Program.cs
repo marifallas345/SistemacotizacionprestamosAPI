@@ -15,6 +15,16 @@ builder.Services.AddScoped<ClienteRepository>();
 builder.Services.AddScoped<EncuestaRepository>();
 builder.Services.AddScoped<NivelEducativoRepository>();
 builder.Services.AddScoped<RangoIngresoRepository>();
+builder.Services.AddScoped<EstadoCotizacionRepository>();
+builder.Services.AddScoped<CotizacionRepository>();
+builder.Services.AddScoped<DetalleAmortizacionRepository>();
+builder.Services.AddScoped<RangoEdadRepository>();
+builder.Services.AddScoped<TipoPrestamoRepository>();
+builder.Services.AddScoped<PlazoRepository>();
+builder.Services.AddScoped<MontoRangoRepository>();
+builder.Services.AddScoped<TasaInteresRangoRepository>();
+builder.Services.AddScoped<CapacidadPagoRepository>();
+builder.Services.AddScoped<MedioContratacionRepository>();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

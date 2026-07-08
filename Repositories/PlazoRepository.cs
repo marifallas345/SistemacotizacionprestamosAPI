@@ -5,98 +5,92 @@ using System.Data;
 
 namespace SistemacotizacionprestamosAPI.Repositories
 {
-    public class OcupacionRepository
+    public class PlazoRepository
     {
         private readonly DbContext _context;
 
-        public OcupacionRepository(DbContext context)
+        public PlazoRepository(DbContext context)
         {
             _context = context;
         }
 
-        public List<Ocupacion> Listar()
+        private Plazo Mapear(SqlDataReader dr)
         {
-            List<Ocupacion> lista = new();
+            return new Plazo
+            {
+                IdPlazo = Convert.ToInt32(dr["id_plazo"]),
+                Meses = Convert.ToInt32(dr["meses"]),
+                Descripcion = dr["descripcion"] as string,
+                Activo = Convert.ToBoolean(dr["activo"])
+            };
+        }
+
+        public List<Plazo> Listar()
+        {
+            List<Plazo> lista = new();
 
             using (SqlConnection conn = _context.CreateConnection())
             {
-                SqlCommand cmd = new SqlCommand("sp_ListarOcupaciones", conn);
-
+                SqlCommand cmd = new SqlCommand("sp_ListarPlazos", conn);
                 cmd.CommandType = CommandType.StoredProcedure;
 
                 conn.Open();
-
                 SqlDataReader dr = cmd.ExecuteReader();
 
                 while (dr.Read())
-                {
-                    lista.Add(new Ocupacion
-                    {
-                        IdOcupacion = Convert.ToInt32(dr["id_ocupacion"]),
-                        Nombre = dr["nombre"].ToString()!,
-                        Activo = Convert.ToBoolean(dr["activo"])
-                    });
-                }
+                    lista.Add(Mapear(dr));
             }
 
             return lista;
         }
 
-        public Ocupacion ObtenerPorId(int id)
+        public Plazo ObtenerPorId(int id)
         {
-            Ocupacion ocupacion = new Ocupacion();
+            Plazo item = new Plazo();
 
             using (SqlConnection conn = _context.CreateConnection())
             {
-                SqlCommand cmd = new SqlCommand("sp_ObtenerOcupacionPorId", conn);
+                SqlCommand cmd = new SqlCommand("sp_ObtenerPlazoPorId", conn);
                 cmd.CommandType = CommandType.StoredProcedure;
-
-                cmd.Parameters.AddWithValue("@OcupacionID", id);
+                cmd.Parameters.AddWithValue("@PlazoID", id);
 
                 conn.Open();
-
                 SqlDataReader dr = cmd.ExecuteReader();
 
                 if (dr.Read())
-                {
-                    ocupacion.IdOcupacion = Convert.ToInt32(dr["id_ocupacion"]);
-                    ocupacion.Nombre = dr["nombre"].ToString()!;
-                    ocupacion.Activo = Convert.ToBoolean(dr["activo"]);
-                }
+                    item = Mapear(dr);
             }
 
-            return ocupacion;
+            return item;
         }
 
-        public bool Insertar(Ocupacion ocupacion)
+        public bool Insertar(Plazo item)
         {
             using (SqlConnection conn = _context.CreateConnection())
             {
-                SqlCommand cmd = new SqlCommand("sp_InsertarOcupacion", conn);
-
+                SqlCommand cmd = new SqlCommand("sp_InsertarPlazo", conn);
                 cmd.CommandType = CommandType.StoredProcedure;
 
-                cmd.Parameters.AddWithValue("@Nombre", ocupacion.Nombre);
+                cmd.Parameters.AddWithValue("@Meses", item.Meses);
+                cmd.Parameters.AddWithValue("@Descripcion", item.Descripcion ?? (object)DBNull.Value);
 
                 conn.Open();
-
                 return cmd.ExecuteScalar() != null;
             }
         }
 
-        public bool Actualizar(Ocupacion ocupacion)
+        public bool Actualizar(Plazo item)
         {
             using (SqlConnection conn = _context.CreateConnection())
             {
-                SqlCommand cmd = new SqlCommand("sp_ActualizarOcupacion", conn);
-
+                SqlCommand cmd = new SqlCommand("sp_ActualizarPlazo", conn);
                 cmd.CommandType = CommandType.StoredProcedure;
 
-                cmd.Parameters.AddWithValue("@OcupacionID", ocupacion.IdOcupacion);
-                cmd.Parameters.AddWithValue("@Nombre", ocupacion.Nombre);
+                cmd.Parameters.AddWithValue("@PlazoID", item.IdPlazo);
+                cmd.Parameters.AddWithValue("@Meses", item.Meses);
+                cmd.Parameters.AddWithValue("@Descripcion", item.Descripcion ?? (object)DBNull.Value);
 
                 conn.Open();
-
                 cmd.ExecuteNonQuery();
                 return true;
             }
@@ -106,14 +100,11 @@ namespace SistemacotizacionprestamosAPI.Repositories
         {
             using (SqlConnection conn = _context.CreateConnection())
             {
-                SqlCommand cmd = new SqlCommand("sp_EliminarLogicoOcupacion", conn);
-
+                SqlCommand cmd = new SqlCommand("sp_EliminarLogicoPlazo", conn);
                 cmd.CommandType = CommandType.StoredProcedure;
-
-                cmd.Parameters.AddWithValue("@OcupacionID", id);
+                cmd.Parameters.AddWithValue("@PlazoID", id);
 
                 conn.Open();
-
                 cmd.ExecuteNonQuery();
                 return true;
             }

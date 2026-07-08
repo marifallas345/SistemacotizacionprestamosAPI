@@ -83,7 +83,7 @@ namespace SistemacotizacionprestamosAPI.Repositories
 
                 conn.Open();
 
-                return cmd.ExecuteNonQuery() > 0;
+                return cmd.ExecuteScalar() != null;
             }
         }
 
@@ -101,7 +101,9 @@ namespace SistemacotizacionprestamosAPI.Repositories
 
                 conn.Open();
 
-                return cmd.ExecuteNonQuery() > 0;
+
+                cmd.ExecuteNonQuery();
+                return true;
             }
         }
 
@@ -117,7 +119,8 @@ namespace SistemacotizacionprestamosAPI.Repositories
 
                 conn.Open();
 
-                return cmd.ExecuteNonQuery() > 0;
+                cmd.ExecuteNonQuery();
+                return true;
             }
         }
     }

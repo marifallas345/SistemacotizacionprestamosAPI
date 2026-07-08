@@ -4137,3 +4137,583 @@ BEGIN
 
 END
 GO
+
+-- ============================================================
+-- TABLA: EstadosCotizacion
+-- ============================================================
+CREATE TABLE EstadosCotizacion (
+    id_estado            INT            IDENTITY(1,1)  NOT NULL,
+    nombre_estado        VARCHAR(50)    NOT NULL,
+    descripcion          VARCHAR(200)   NULL,
+activo               BIT            NOT NULL  DEFAULT 1,
+    fecha_creacion       DATETIME2(3)   NOT NULL  DEFAULT SYSDATETIME(),
+    usuario_creacion     INT            NULL,
+    fecha_modificacion   DATETIME2(3)   NULL,
+    usuario_modificacion INT            NULL,
+CONSTRAINT PK_EstadosCotizacion PRIMARY KEY (id_estado),
+CONSTRAINT UQ_EstadosCotizacion_nombre_estado UNIQUE (nombre_estado),
+CONSTRAINT CHK_EstadosCotizacion_nombre CHECK (LEN(LTRIM(RTRIM(nombre_estado))) > 0)
+);
+GO
+ 
+-- ============================================================
+-- TABLA: Cotizaciones
+-- ============================================================
+CREATE TABLE Cotizaciones (
+    id_cotizacion         INT            IDENTITY(1,1)  NOT NULL,
+    id_cliente            INT            NOT NULL,
+    id_tipo_prestamo      INT            NOT NULL,
+    id_plazo              INT            NOT NULL,
+    id_estado             INT            NOT NULL  DEFAULT 1,
+    id_usuario            INT            NULL,
+    monto_solicitado      DECIMAL(12,2)  NOT NULL,
+    tasa_interes_aplicada DECIMAL(5,2)   NOT NULL,
+    cuota_mensual         DECIMAL(12,2)  NOT NULL,
+    monto_total_intereses DECIMAL(14,2)  NOT NULL,
+    monto_total_pagar     DECIMAL(14,2)  NOT NULL,
+    fecha_cotizacion      DATETIME2(3)   NOT NULL  DEFAULT SYSDATETIME(),
+    observaciones         VARCHAR(500)   NULL,
+activo               BIT            NOT NULL  DEFAULT 1,
+    fecha_creacion       DATETIME2(3)   NOT NULL  DEFAULT SYSDATETIME(),
+    usuario_creacion     INT            NULL,
+    fecha_modificacion   DATETIME2(3)   NULL,
+    usuario_modificacion INT            NULL,
+CONSTRAINT PK_Cotizaciones PRIMARY KEY (id_cotizacion),
+CONSTRAINT FK_Cotizaciones_Clientes_id_cliente FOREIGN KEY (id_cliente) REFERENCES Clientes(id_cliente) ON DELETE NO ACTION ON UPDATE NO ACTION,
+CONSTRAINT FK_Cotizaciones_TiposPrestamo_id_tipo_prestamo FOREIGN KEY (id_tipo_prestamo) REFERENCES TiposPrestamo(id_tipo_prestamo) ON DELETE NO ACTION ON UPDATE NO ACTION,
+CONSTRAINT FK_Cotizaciones_Plazos_id_plazo FOREIGN KEY (id_plazo) REFERENCES Plazos(id_plazo) ON DELETE NO ACTION ON UPDATE NO ACTION,
+CONSTRAINT FK_Cotizaciones_EstadosCotizacion_id_estado FOREIGN KEY (id_estado) REFERENCES EstadosCotizacion(id_estado) ON DELETE NO ACTION ON UPDATE NO ACTION,
+CONSTRAINT FK_Cotizaciones_Usuarios_id_usuario FOREIGN KEY (id_usuario) REFERENCES Usuarios(id_usuario) ON DELETE NO ACTION ON UPDATE NO ACTION,
+CONSTRAINT CHK_Cotizaciones_monto_solicitado CHECK (monto_solicitado > 0),
+CONSTRAINT CHK_Cotizaciones_tasa_interes CHECK (tasa_interes_aplicada >= 0),
+CONSTRAINT CHK_Cotizaciones_cuota_mensual CHECK (cuota_mensual > 0),
+CONSTRAINT CHK_Cotizaciones_montos_totales CHECK (monto_total_pagar >= monto_solicitado AND monto_total_intereses >= 0)
+);
+GO
+ 
+CREATE INDEX idx_cotizaciones_id_cliente  ON Cotizaciones (id_cliente);
+CREATE INDEX idx_cotizaciones_id_estado   ON Cotizaciones (id_estado);
+CREATE INDEX idx_cotizaciones_fecha       ON Cotizaciones (fecha_cotizacion);
+GO
+ 
+-- ============================================================
+-- TABLA: DetalleAmortizacion
+-- ============================================================
+CREATE TABLE DetalleAmortizacion (
+    id_detalle_amortizacion INT            IDENTITY(1,1)  NOT NULL,
+    id_cotizacion           INT            NOT NULL,
+    numero_cuota            INT            NOT NULL,
+    monto_capital           DECIMAL(12,2)  NOT NULL,
+    monto_interes           DECIMAL(12,2)  NOT NULL,
+    monto_cuota             DECIMAL(12,2)  NOT NULL,
+    saldo_pendiente         DECIMAL(12,2)  NOT NULL,
+activo               BIT            NOT NULL  DEFAULT 1,
+    fecha_creacion       DATETIME2(3)   NOT NULL  DEFAULT SYSDATETIME(),
+    usuario_creacion     INT            NULL,
+    fecha_modificacion   DATETIME2(3)   NULL,
+    usuario_modificacion INT            NULL,
+CONSTRAINT PK_DetalleAmortizacion PRIMARY KEY (id_detalle_amortizacion),
+CONSTRAINT UQ_DetalleAmortizacion_id_cotizacion_numero_cuota UNIQUE (id_cotizacion, numero_cuota),
+CONSTRAINT FK_DetalleAmortizacion_Cotizaciones_id_cotizacion FOREIGN KEY (id_cotizacion) REFERENCES Cotizaciones(id_cotizacion) ON DELETE NO ACTION ON UPDATE NO ACTION,
+CONSTRAINT CHK_DetalleAmortizacion_numero_cuota CHECK (numero_cuota > 0),
+CONSTRAINT CHK_DetalleAmortizacion_montos CHECK (monto_capital >= 0 AND monto_interes >= 0 AND monto_cuota > 0 AND saldo_pendiente >= 0)
+);
+GO
+ 
+CREATE INDEX idx_detalleamortizacion_id_cotizacion ON DetalleAmortizacion (id_cotizacion);
+GO
+ 
+-- ============================================================
+-- Llaves Foráneas de Auditoría (usuario_creacion / usuario_modificacion)
+-- ============================================================
+ALTER TABLE EstadosCotizacion   ADD CONSTRAINT FK_EstadosCotizacion_UsuarioCreacion     FOREIGN KEY (usuario_creacion)     REFERENCES Usuarios(id_usuario) ON DELETE NO ACTION ON UPDATE NO ACTION;
+ALTER TABLE EstadosCotizacion   ADD CONSTRAINT FK_EstadosCotizacion_UsuarioModificacion FOREIGN KEY (usuario_modificacion) REFERENCES Usuarios(id_usuario) ON DELETE NO ACTION ON UPDATE NO ACTION;
+ALTER TABLE Cotizaciones        ADD CONSTRAINT FK_Cotizaciones_UsuarioCreacion         FOREIGN KEY (usuario_creacion)     REFERENCES Usuarios(id_usuario) ON DELETE NO ACTION ON UPDATE NO ACTION;
+ALTER TABLE Cotizaciones        ADD CONSTRAINT FK_Cotizaciones_UsuarioModificacion     FOREIGN KEY (usuario_modificacion) REFERENCES Usuarios(id_usuario) ON DELETE NO ACTION ON UPDATE NO ACTION;
+ALTER TABLE DetalleAmortizacion ADD CONSTRAINT FK_DetalleAmortizacion_UsuarioCreacion     FOREIGN KEY (usuario_creacion)     REFERENCES Usuarios(id_usuario) ON DELETE NO ACTION ON UPDATE NO ACTION;
+ALTER TABLE DetalleAmortizacion ADD CONSTRAINT FK_DetalleAmortizacion_UsuarioModificacion FOREIGN KEY (usuario_modificacion) REFERENCES Usuarios(id_usuario) ON DELETE NO ACTION ON UPDATE NO ACTION;
+GO
+ 
+-- ============================================================
+-- Datos Insertados
+-- ============================================================
+ 
+-- Estados de Cotización
+INSERT INTO EstadosCotizacion (nombre_estado, descripcion) VALUES
+    ('Pendiente', 'Cotización generada, en espera de revisión'),
+    ('Aprobada',  'Cotización aprobada por un asesor o administrador'),
+    ('Rechazada', 'Cotización rechazada por no cumplir requisitos'),
+    ('Cancelada', 'Cotización cancelada por el cliente o el sistema');
+GO
+ 
+-- ============================================================
+-- Trigger de Auditoría
+-- ============================================================
+CREATE TRIGGER trg_AfterInsertUpdate_Cotizaciones
+ON Cotizaciones
+AFTER INSERT, UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+ 
+    IF NOT EXISTS (SELECT 1 FROM deleted)
+    BEGIN
+        INSERT INTO Auditorias (id_usuario, accion, tabla_afectada, id_registro_afectado, detalle, fecha_accion)
+        SELECT
+            i.id_usuario,
+            'INSERT',
+            'Cotizaciones',
+            i.id_cotizacion,
+            'id_cliente: ' + CAST(i.id_cliente AS VARCHAR) +
+            ' | monto_solicitado: ' + CAST(i.monto_solicitado AS VARCHAR) +
+            ' | id_estado: ' + CAST(i.id_estado AS VARCHAR),
+            SYSDATETIME()
+        FROM inserted i;
+    END
+    ELSE
+    BEGIN
+        INSERT INTO Auditorias (id_usuario, accion, tabla_afectada, id_registro_afectado, detalle, fecha_accion)
+        SELECT
+            COALESCE(i.usuario_modificacion, i.id_usuario),
+            CASE
+                WHEN d.activo = 1 AND i.activo = 0 THEN 'DELETE_LOGICO'
+                WHEN d.activo = 0 AND i.activo = 1 THEN 'RESTORE'
+                ELSE 'UPDATE'
+            END,
+            'Cotizaciones',
+            i.id_cotizacion,
+            'id_cliente: ' + CAST(i.id_cliente AS VARCHAR) +
+            ' | monto_solicitado: ' + CAST(i.monto_solicitado AS VARCHAR) +
+            ' | id_estado: ' + CAST(i.id_estado AS VARCHAR),
+            SYSDATETIME()
+        FROM inserted i
+        INNER JOIN deleted d ON d.id_cotizacion = i.id_cotizacion;
+    END
+END;
+GO
+
+
+ 
+-- ===== EstadosCotizacion =====
+ 
+CREATE PROCEDURE sp_InsertarEstadoCotizacion
+    @NombreEstado VARCHAR(50),
+    @Descripcion VARCHAR(200) = NULL,
+    @UsuarioCreacionID INT = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        BEGIN TRANSACTION;
+            IF EXISTS (SELECT 1 FROM EstadosCotizacion WHERE nombre_estado = @NombreEstado AND activo = 1)
+                RAISERROR('Ya existe un registro de EstadosCotizacion con ese valor.', 16, 1);
+ 
+            INSERT INTO EstadosCotizacion (nombre_estado, descripcion, usuario_creacion)
+            VALUES (@NombreEstado, @Descripcion, @UsuarioCreacionID);
+ 
+            SELECT SCOPE_IDENTITY() AS IdGenerado;
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH;
+END;
+GO
+ 
+CREATE PROCEDURE sp_ActualizarEstadoCotizacion
+    @EstadoID INT,
+    @NombreEstado VARCHAR(50),
+    @Descripcion VARCHAR(200) = NULL,
+    @UsuarioModificacionID INT = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        BEGIN TRANSACTION;
+            IF NOT EXISTS (SELECT 1 FROM EstadosCotizacion WHERE id_estado = @EstadoID AND activo = 1)
+                RAISERROR('El registro no existe o está inactivo.', 16, 1);
+ 
+            UPDATE EstadosCotizacion
+            SET nombre_estado = @NombreEstado,
+                descripcion = @Descripcion,
+                fecha_modificacion = SYSDATETIME(),
+                usuario_modificacion = @UsuarioModificacionID
+            WHERE id_estado = @EstadoID;
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH;
+END;
+GO
+ 
+CREATE PROCEDURE sp_ObtenerEstadoCotizacionPorId
+    @EstadoID INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        SELECT *
+        FROM   EstadosCotizacion
+        WHERE  id_estado = @EstadoID AND activo = 1;
+    END TRY
+    BEGIN CATCH
+        THROW;
+    END CATCH;
+END;
+GO
+ 
+CREATE PROCEDURE sp_ListarEstadosCotizacion
+    @IncluirInactivos BIT = 0
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        SELECT *
+        FROM   EstadosCotizacion
+        WHERE  activo = 1 OR @IncluirInactivos = 1
+        ORDER BY id_estado;
+    END TRY
+    BEGIN CATCH
+        THROW;
+    END CATCH;
+END;
+GO
+ 
+CREATE PROCEDURE sp_EliminarLogicoEstadoCotizacion
+    @EstadoID INT,
+    @UsuarioModificacionID INT = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        BEGIN TRANSACTION;
+            IF NOT EXISTS (SELECT 1 FROM EstadosCotizacion WHERE id_estado = @EstadoID AND activo = 1)
+                RAISERROR('El registro no existe o ya está inactivo.', 16, 1);
+ 
+            UPDATE EstadosCotizacion
+            SET activo = 0,
+                fecha_modificacion = SYSDATETIME(),
+                usuario_modificacion = @UsuarioModificacionID
+            WHERE id_estado = @EstadoID;
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH;
+END;
+GO
+ 
+-- ===== Cotizaciones =====
+ 
+CREATE PROCEDURE sp_InsertarCotizacion
+    @IdCliente INT,
+    @IdTipoPrestamo INT,
+    @IdPlazo INT,
+    @IdEstado INT = 1,
+    @IdUsuario INT = NULL,
+    @MontoSolicitado DECIMAL(12,2),
+    @TasaInteresAplicada DECIMAL(5,2),
+    @CuotaMensual DECIMAL(12,2),
+    @MontoTotalIntereses DECIMAL(14,2),
+    @MontoTotalPagar DECIMAL(14,2),
+    @Observaciones VARCHAR(500) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        BEGIN TRANSACTION;
+            INSERT INTO Cotizaciones
+            (
+                id_cliente, id_tipo_prestamo, id_plazo, id_estado, id_usuario,
+                monto_solicitado, tasa_interes_aplicada, cuota_mensual,
+                monto_total_intereses, monto_total_pagar, observaciones,
+                usuario_creacion
+            )
+            VALUES
+            (
+                @IdCliente, @IdTipoPrestamo, @IdPlazo, @IdEstado, @IdUsuario,
+                @MontoSolicitado, @TasaInteresAplicada, @CuotaMensual,
+                @MontoTotalIntereses, @MontoTotalPagar, @Observaciones,
+                @IdUsuario
+            );
+ 
+            SELECT SCOPE_IDENTITY() AS IdGenerado;
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH;
+END;
+GO
+ 
+CREATE PROCEDURE sp_ActualizarCotizacion
+    @CotizacionID INT,
+    @IdEstado INT,
+    @MontoSolicitado DECIMAL(12,2),
+    @TasaInteresAplicada DECIMAL(5,2),
+    @CuotaMensual DECIMAL(12,2),
+    @MontoTotalIntereses DECIMAL(14,2),
+    @MontoTotalPagar DECIMAL(14,2),
+    @Observaciones VARCHAR(500) = NULL,
+    @UsuarioModificacionID INT = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        BEGIN TRANSACTION;
+            IF NOT EXISTS (SELECT 1 FROM Cotizaciones WHERE id_cotizacion = @CotizacionID AND activo = 1)
+                RAISERROR('El registro no existe o está inactivo.', 16, 1);
+ 
+            UPDATE Cotizaciones
+            SET id_estado = @IdEstado,
+                monto_solicitado = @MontoSolicitado,
+                tasa_interes_aplicada = @TasaInteresAplicada,
+                cuota_mensual = @CuotaMensual,
+                monto_total_intereses = @MontoTotalIntereses,
+                monto_total_pagar = @MontoTotalPagar,
+                observaciones = @Observaciones,
+                fecha_modificacion = SYSDATETIME(),
+                usuario_modificacion = @UsuarioModificacionID
+            WHERE id_cotizacion = @CotizacionID;
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH;
+END;
+GO
+ 
+CREATE PROCEDURE sp_ObtenerCotizacionPorId
+    @CotizacionID INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        SELECT *
+        FROM   Cotizaciones
+        WHERE  id_cotizacion = @CotizacionID AND activo = 1;
+    END TRY
+    BEGIN CATCH
+        THROW;
+    END CATCH;
+END;
+GO
+ 
+CREATE PROCEDURE sp_ListarCotizaciones
+    @IncluirInactivos BIT = 0
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        SELECT *
+        FROM   Cotizaciones
+        WHERE  activo = 1 OR @IncluirInactivos = 1
+        ORDER BY fecha_cotizacion DESC;
+    END TRY
+    BEGIN CATCH
+        THROW;
+    END CATCH;
+END;
+GO
+ 
+CREATE PROCEDURE sp_EliminarLogicoCotizacion
+    @CotizacionID INT,
+    @UsuarioModificacionID INT = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        BEGIN TRANSACTION;
+            IF NOT EXISTS (SELECT 1 FROM Cotizaciones WHERE id_cotizacion = @CotizacionID AND activo = 1)
+                RAISERROR('El registro no existe o ya está inactivo.', 16, 1);
+ 
+            UPDATE Cotizaciones
+            SET activo = 0,
+                fecha_modificacion = SYSDATETIME(),
+                usuario_modificacion = @UsuarioModificacionID
+            WHERE id_cotizacion = @CotizacionID;
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH;
+END;
+GO
+ 
+-- ===== DetalleAmortizacion =====
+ 
+CREATE PROCEDURE sp_InsertarDetalleAmortizacion
+    @IdCotizacion INT,
+    @NumeroCuota INT,
+    @MontoCapital DECIMAL(12,2),
+    @MontoInteres DECIMAL(12,2),
+    @MontoCuota DECIMAL(12,2),
+    @SaldoPendiente DECIMAL(12,2),
+    @UsuarioCreacionID INT = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        BEGIN TRANSACTION;
+            INSERT INTO DetalleAmortizacion
+            (
+                id_cotizacion, numero_cuota, monto_capital, monto_interes,
+                monto_cuota, saldo_pendiente, usuario_creacion
+            )
+            VALUES
+            (
+                @IdCotizacion, @NumeroCuota, @MontoCapital, @MontoInteres,
+                @MontoCuota, @SaldoPendiente, @UsuarioCreacionID
+            );
+ 
+            SELECT SCOPE_IDENTITY() AS IdGenerado;
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH;
+END;
+GO
+ 
+CREATE PROCEDURE sp_ActualizarDetalleAmortizacion
+    @DetalleAmortizacionID INT,
+    @MontoCapital DECIMAL(12,2),
+    @MontoInteres DECIMAL(12,2),
+    @MontoCuota DECIMAL(12,2),
+    @SaldoPendiente DECIMAL(12,2),
+    @UsuarioModificacionID INT = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        BEGIN TRANSACTION;
+            IF NOT EXISTS (SELECT 1 FROM DetalleAmortizacion WHERE id_detalle_amortizacion = @DetalleAmortizacionID AND activo = 1)
+                RAISERROR('El registro no existe o está inactivo.', 16, 1);
+ 
+            UPDATE DetalleAmortizacion
+            SET monto_capital = @MontoCapital,
+                monto_interes = @MontoInteres,
+                monto_cuota = @MontoCuota,
+                saldo_pendiente = @SaldoPendiente,
+                fecha_modificacion = SYSDATETIME(),
+                usuario_modificacion = @UsuarioModificacionID
+            WHERE id_detalle_amortizacion = @DetalleAmortizacionID;
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH;
+END;
+GO
+ 
+CREATE PROCEDURE sp_ObtenerDetalleAmortizacionPorId
+    @DetalleAmortizacionID INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        SELECT *
+        FROM   DetalleAmortizacion
+        WHERE  id_detalle_amortizacion = @DetalleAmortizacionID AND activo = 1;
+    END TRY
+    BEGIN CATCH
+        THROW;
+    END CATCH;
+END;
+GO
+ 
+CREATE PROCEDURE sp_ListarDetalleAmortizacion
+    @IncluirInactivos BIT = 0
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        SELECT *
+        FROM   DetalleAmortizacion
+        WHERE  activo = 1 OR @IncluirInactivos = 1
+        ORDER BY id_cotizacion, numero_cuota;
+    END TRY
+    BEGIN CATCH
+        THROW;
+    END CATCH;
+END;
+GO
+ 
+CREATE PROCEDURE sp_ListarDetalleAmortizacionPorCotizacion
+    @IdCotizacion INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        SELECT *
+        FROM   DetalleAmortizacion
+        WHERE  id_cotizacion = @IdCotizacion AND activo = 1
+        ORDER BY numero_cuota;
+    END TRY
+    BEGIN CATCH
+        THROW;
+    END CATCH;
+END;
+GO
+ 
+CREATE PROCEDURE sp_EliminarLogicoDetalleAmortizacion
+    @DetalleAmortizacionID INT,
+    @UsuarioModificacionID INT = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        BEGIN TRANSACTION;
+            IF NOT EXISTS (SELECT 1 FROM DetalleAmortizacion WHERE id_detalle_amortizacion = @DetalleAmortizacionID AND activo = 1)
+                RAISERROR('El registro no existe o ya está inactivo.', 16, 1);
+ 
+            UPDATE DetalleAmortizacion
+            SET activo = 0,
+                fecha_modificacion = SYSDATETIME(),
+                usuario_modificacion = @UsuarioModificacionID
+            WHERE id_detalle_amortizacion = @DetalleAmortizacionID;
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH;
+END;
+GO
+
+CREATE PROCEDURE sp_Login
+    @NombreUsuario VARCHAR(100),
+    @HashPassword VARCHAR(256)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        SELECT TOP 1
+            u.id_usuario,
+            u.nombre_usuario,
+            u.nombre,
+            u.email,
+            r.id_rol,
+            r.nombre_rol
+        FROM Usuarios u
+        INNER JOIN UsuariosRoles ur ON ur.id_usuario = u.id_usuario AND ur.activo = 1
+        INNER JOIN Roles r ON r.id_rol = ur.id_rol AND r.activo = 1
+        WHERE u.nombre_usuario = @NombreUsuario
+          AND u.hash_password = @HashPassword
+          AND u.activo = 1;
+    END TRY
+    BEGIN CATCH
+        THROW;
+    END CATCH;
+END;
+GO
+ 

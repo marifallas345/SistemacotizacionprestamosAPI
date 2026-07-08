@@ -112,7 +112,9 @@ namespace SistemacotizacionprestamosAPI.Repositories
 
                 conn.Open();
 
-                return cmd.ExecuteNonQuery() > 0;
+    
+                cmd.ExecuteNonQuery();
+                return true;
             }
         }
 
@@ -128,7 +130,8 @@ namespace SistemacotizacionprestamosAPI.Repositories
 
                 conn.Open();
 
-                return cmd.ExecuteNonQuery() > 0;
+                cmd.ExecuteNonQuery();
+                return true;
             }
         }
         public Usuario? Login(string nombreUsuario, string password)
@@ -143,7 +146,7 @@ namespace SistemacotizacionprestamosAPI.Repositories
 
                 cmd.Parameters.AddWithValue("@NombreUsuario", nombreUsuario);
 
-                //Convierte la contraseña a SHA256 antes de enviarla al SP
+
                 cmd.Parameters.AddWithValue("@HashPassword",
                     PasswordHelper.GenerarHash(password));
 
@@ -167,4 +170,4 @@ namespace SistemacotizacionprestamosAPI.Repositories
             return usuario;
         }
     }
- }
+}
