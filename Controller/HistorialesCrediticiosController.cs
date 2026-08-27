@@ -7,19 +7,19 @@ namespace SistemacotizacionprestamosAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class TiposPrestamoController : ControllerBase
+    public class HistorialesCrediticiosController : ControllerBase
     {
-        private readonly TipoPrestamoRepository _repo;
+        private readonly HistorialCrediticioRepository _repo;
 
-        public TiposPrestamoController(
-            TipoPrestamoRepository repo)
+        public HistorialesCrediticiosController(
+            HistorialCrediticioRepository repo)
         {
             _repo = repo;
         }
 
 
         // ============================================================
-        // LISTAR TIPOS DE PRÉSTAMO
+        // LISTAR HISTORIALES CREDITICIOS
         // SOLO ADMINISTRADOR
         // ============================================================
 
@@ -38,7 +38,7 @@ namespace SistemacotizacionprestamosAPI.Controllers
 
 
         // ============================================================
-        // OBTENER TIPO DE PRÉSTAMO POR ID
+        // OBTENER HISTORIAL CREDITICIO POR ID
         // SOLO ADMINISTRADOR
         // ============================================================
 
@@ -53,92 +53,97 @@ namespace SistemacotizacionprestamosAPI.Controllers
             if (id <= 0)
             {
                 return BadRequest(
-                    "El ID del tipo de préstamo no es válido.");
+                    "El ID del historial no es válido.");
             }
 
-            var tipoPrestamo =
+            var historial =
                 _repo.ObtenerPorId(id);
 
-            if (tipoPrestamo == null)
+            if (historial == null)
             {
                 return NotFound(
-                    "No se encontró el tipo de préstamo.");
+                    "El historial crediticio no existe o está inactivo.");
             }
 
-            return Ok(tipoPrestamo);
+            return Ok(historial);
         }
 
 
         // ============================================================
-        // CREAR TIPO DE PRÉSTAMO
+        // CREAR HISTORIAL CREDITICIO
         // SOLO ADMINISTRADOR
         // ============================================================
 
         [HttpPost]
         public IActionResult Post(
-            TipoPrestamo item)
+            HistorialCrediticio historial)
         {
             if (!AutorizacionApiHelper.EsAdministrador(Request))
             {
                 return Forbid();
             }
 
-            if (item == null)
+            if (historial == null)
             {
                 return BadRequest(
-                    "Los datos del tipo de préstamo son obligatorios.");
+                    "Los datos del historial crediticio son obligatorios.");
             }
 
-            if (_repo.Insertar(item))
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            if (_repo.Insertar(historial))
             {
                 return Ok(
-                    "Tipo de préstamo agregado correctamente.");
+                    "Historial crediticio agregado correctamente.");
             }
 
             return BadRequest(
-                "No fue posible agregar el tipo de préstamo.");
+                "No fue posible agregar el historial crediticio.");
         }
 
 
         // ============================================================
-        // ACTUALIZAR TIPO DE PRÉSTAMO
+        // ACTUALIZAR HISTORIAL CREDITICIO
         // SOLO ADMINISTRADOR
         // ============================================================
 
         [HttpPut]
         public IActionResult Put(
-            TipoPrestamo item)
+            HistorialCrediticio historial)
         {
             if (!AutorizacionApiHelper.EsAdministrador(Request))
             {
                 return Forbid();
             }
 
-            if (item == null)
+            if (historial == null)
             {
                 return BadRequest(
-                    "Los datos del tipo de préstamo son obligatorios.");
+                    "Los datos del historial crediticio son obligatorios.");
             }
 
-            if (item.IdTipoPrestamo <= 0)
+            if (historial.IdHistorial <= 0)
             {
                 return BadRequest(
-                    "El ID del tipo de préstamo no es válido.");
+                    "El ID del historial no es válido.");
             }
 
-            if (_repo.Actualizar(item))
+            if (_repo.Actualizar(historial))
             {
                 return Ok(
-                    "Tipo de préstamo actualizado correctamente.");
+                    "Historial crediticio actualizado correctamente.");
             }
 
             return BadRequest(
-                "No fue posible actualizar el tipo de préstamo.");
+                "No fue posible actualizar el historial crediticio.");
         }
 
 
         // ============================================================
-        // ELIMINAR TIPO DE PRÉSTAMO
+        // ELIMINAR HISTORIAL CREDITICIO
         // SOLO ADMINISTRADOR
         // ============================================================
 
@@ -153,22 +158,22 @@ namespace SistemacotizacionprestamosAPI.Controllers
             if (id <= 0)
             {
                 return BadRequest(
-                    "El ID del tipo de préstamo no es válido.");
+                    "El ID del historial no es válido.");
             }
 
             if (_repo.Eliminar(id))
             {
                 return Ok(
-                    "Tipo de préstamo eliminado correctamente.");
+                    "Historial crediticio eliminado lógicamente.");
             }
 
             return BadRequest(
-                "No fue posible eliminar el tipo de préstamo.");
+                "No fue posible eliminar el historial crediticio.");
         }
 
 
         // ============================================================
-        // RESTAURAR TIPO DE PRÉSTAMO
+        // RESTAURAR HISTORIAL CREDITICIO
         // SOLO ADMINISTRADOR
         // ============================================================
 
@@ -183,14 +188,17 @@ namespace SistemacotizacionprestamosAPI.Controllers
             if (id <= 0)
             {
                 return BadRequest(
-                    "El ID del tipo de préstamo no es válido.");
+                    "El ID del historial no es válido.");
             }
 
-            return _repo.Restaurar(id)
-                ? Ok(
-                    "Tipo de préstamo restaurado correctamente.")
-                : BadRequest(
-                    "No fue posible restaurar el tipo de préstamo.");
+            if (_repo.Restaurar(id))
+            {
+                return Ok(
+                    "Historial crediticio restaurado correctamente.");
+            }
+
+            return BadRequest(
+                "No fue posible restaurar el historial crediticio.");
         }
     }
 }

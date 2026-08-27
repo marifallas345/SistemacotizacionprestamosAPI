@@ -7,45 +7,61 @@ namespace SistemacotizacionprestamosAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class TiposPrestamoController : ControllerBase
+    public class CategoriasPreguntaController : ControllerBase
     {
-        private readonly TipoPrestamoRepository _repo;
+        private readonly CategoriaPreguntaRepository _repo;
 
-        public TiposPrestamoController(
-            TipoPrestamoRepository repo)
+        public CategoriasPreguntaController(
+            CategoriaPreguntaRepository repo)
         {
             _repo = repo;
         }
 
 
         // ============================================================
-        // LISTAR TIPOS DE PRÉSTAMO
-        // SOLO ADMINISTRADOR
+        // LISTAR CATEGORÍAS
+        // ADMINISTRADOR + ENCUESTADOR
         // ============================================================
 
         [HttpGet]
         public IActionResult Get(
             [FromQuery] bool incluirInactivos = false)
         {
-            if (!AutorizacionApiHelper.EsAdministrador(Request))
+            // El Encuestador puede consultar categorías activas.
+            // El Administrador puede consultar activas e inactivas.
+
+            if (AutorizacionApiHelper.EsAdministrador(Request))
             {
-                return Forbid();
+                return Ok(
+                    _repo.Listar(incluirInactivos));
             }
 
-            return Ok(
-                _repo.Listar(incluirInactivos));
+            if (AutorizacionApiHelper.EsEncuestador(Request))
+            {
+                // El Encuestador NO puede ver eliminadas.
+                if (incluirInactivos)
+                {
+                    return Forbid();
+                }
+
+                return Ok(
+                    _repo.Listar(false));
+            }
+
+            return Forbid();
         }
 
 
         // ============================================================
-        // OBTENER TIPO DE PRÉSTAMO POR ID
-        // SOLO ADMINISTRADOR
+        // OBTENER CATEGORÍA POR ID
+        // ADMINISTRADOR + ENCUESTADOR
         // ============================================================
 
         [HttpGet("{id:int}")]
         public IActionResult Get(int id)
         {
-            if (!AutorizacionApiHelper.EsAdministrador(Request))
+            if (!AutorizacionApiHelper.EsAdministrador(Request) &&
+                !AutorizacionApiHelper.EsEncuestador(Request))
             {
                 return Forbid();
             }
@@ -53,92 +69,104 @@ namespace SistemacotizacionprestamosAPI.Controllers
             if (id <= 0)
             {
                 return BadRequest(
-                    "El ID del tipo de préstamo no es válido.");
+                    "El ID de la categoría no es válido.");
             }
 
-            var tipoPrestamo =
+            var categoria =
                 _repo.ObtenerPorId(id);
 
-            if (tipoPrestamo == null)
+            if (categoria == null)
             {
                 return NotFound(
-                    "No se encontró el tipo de préstamo.");
+                    "La categoría no existe o está inactiva.");
             }
 
-            return Ok(tipoPrestamo);
+            return Ok(categoria);
         }
 
 
         // ============================================================
-        // CREAR TIPO DE PRÉSTAMO
+        // CREAR CATEGORÍA
         // SOLO ADMINISTRADOR
         // ============================================================
 
         [HttpPost]
         public IActionResult Post(
-            TipoPrestamo item)
+            CategoriaPregunta categoria)
         {
             if (!AutorizacionApiHelper.EsAdministrador(Request))
             {
                 return Forbid();
             }
 
-            if (item == null)
+            if (categoria == null)
             {
                 return BadRequest(
-                    "Los datos del tipo de préstamo son obligatorios.");
+                    "Los datos de la categoría son obligatorios.");
             }
 
-            if (_repo.Insertar(item))
+            if (string.IsNullOrWhiteSpace(categoria.Nombre))
+            {
+                return BadRequest(
+                    "El nombre de la categoría es obligatorio.");
+            }
+
+            if (_repo.Insertar(categoria))
             {
                 return Ok(
-                    "Tipo de préstamo agregado correctamente.");
+                    "Categoría agregada correctamente.");
             }
 
             return BadRequest(
-                "No fue posible agregar el tipo de préstamo.");
+                "No fue posible agregar la categoría.");
         }
 
 
         // ============================================================
-        // ACTUALIZAR TIPO DE PRÉSTAMO
+        // ACTUALIZAR CATEGORÍA
         // SOLO ADMINISTRADOR
         // ============================================================
 
         [HttpPut]
         public IActionResult Put(
-            TipoPrestamo item)
+            CategoriaPregunta categoria)
         {
             if (!AutorizacionApiHelper.EsAdministrador(Request))
             {
                 return Forbid();
             }
 
-            if (item == null)
+            if (categoria == null)
             {
                 return BadRequest(
-                    "Los datos del tipo de préstamo son obligatorios.");
+                    "Los datos de la categoría son obligatorios.");
             }
 
-            if (item.IdTipoPrestamo <= 0)
+            if (categoria.IdCategoria <= 0)
             {
                 return BadRequest(
-                    "El ID del tipo de préstamo no es válido.");
+                    "El ID de la categoría no es válido.");
             }
 
-            if (_repo.Actualizar(item))
+            if (string.IsNullOrWhiteSpace(categoria.Nombre))
+            {
+                return BadRequest(
+                    "El nombre de la categoría es obligatorio.");
+            }
+
+            if (_repo.Actualizar(categoria))
             {
                 return Ok(
-                    "Tipo de préstamo actualizado correctamente.");
+                    "Categoría actualizada correctamente.");
             }
 
             return BadRequest(
-                "No fue posible actualizar el tipo de préstamo.");
+                "No fue posible actualizar la categoría.");
         }
 
 
         // ============================================================
-        // ELIMINAR TIPO DE PRÉSTAMO
+        // ELIMINAR CATEGORÍA
         // SOLO ADMINISTRADOR
         // ============================================================
 
@@ -153,22 +181,22 @@ namespace SistemacotizacionprestamosAPI.Controllers
             if (id <= 0)
             {
                 return BadRequest(
-                    "El ID del tipo de préstamo no es válido.");
+                    "El ID de la categoría no es válido.");
             }
 
             if (_repo.Eliminar(id))
             {
                 return Ok(
-                    "Tipo de préstamo eliminado correctamente.");
+                    "Categoría eliminada lógicamente.");
             }
 
             return BadRequest(
-                "No fue posible eliminar el tipo de préstamo.");
+                "No fue posible eliminar la categoría.");
         }
 
 
         // ============================================================
-        // RESTAURAR TIPO DE PRÉSTAMO
+        // RESTAURAR CATEGORÍA
         // SOLO ADMINISTRADOR
         // ============================================================
 
@@ -183,14 +211,17 @@ namespace SistemacotizacionprestamosAPI.Controllers
             if (id <= 0)
             {
                 return BadRequest(
-                    "El ID del tipo de préstamo no es válido.");
+                    "El ID de la categoría no es válido.");
             }
 
-            return _repo.Restaurar(id)
-                ? Ok(
-                    "Tipo de préstamo restaurado correctamente.")
-                : BadRequest(
-                    "No fue posible restaurar el tipo de préstamo.");
+            if (_repo.Restaurar(id))
+            {
+                return Ok(
+                    "Categoría restaurada correctamente.");
+            }
+
+            return BadRequest(
+                "No fue posible restaurar la categoría.");
         }
     }
 }

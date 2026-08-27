@@ -35,20 +35,30 @@ namespace SistemacotizacionprestamosAPI.Repositories
 
             return cotizacion;
         }
-
-        public List<Cotizacion> Listar()
+        public List<Cotizacion> Listar(
+            bool incluirInactivos = false)
         {
             List<Cotizacion> lista = new();
 
-            using (SqlConnection conn = _context.CreateConnection())
+            using (SqlConnection conn =
+                _context.CreateConnection())
             {
-                SqlCommand cmd = new SqlCommand("sp_ListarCotizaciones", conn);
+                SqlCommand cmd =
+                    new SqlCommand(
+                        "sp_ListarCotizaciones",
+                        conn);
 
-                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.CommandType =
+                    CommandType.StoredProcedure;
+
+                cmd.Parameters.AddWithValue(
+                    "@IncluirInactivos",
+                    incluirInactivos);
 
                 conn.Open();
 
-                SqlDataReader dr = cmd.ExecuteReader();
+                using SqlDataReader dr =
+                    cmd.ExecuteReader();
 
                 while (dr.Read())
                 {
@@ -149,6 +159,29 @@ namespace SistemacotizacionprestamosAPI.Repositories
 
                 cmd.ExecuteNonQuery();
                 return true;
+            }
+        }
+
+        public bool Restaurar(int id)
+        {
+            using (SqlConnection conn =
+                _context.CreateConnection())
+            {
+                SqlCommand cmd =
+                    new SqlCommand(
+                        "sp_RestaurarCotizacion",
+                        conn);
+
+                cmd.CommandType =
+                    CommandType.StoredProcedure;
+
+                cmd.Parameters.AddWithValue(
+                    "@CotizacionID",
+                    id);
+
+                conn.Open();
+
+                return cmd.ExecuteNonQuery() != 0;
             }
         }
     }

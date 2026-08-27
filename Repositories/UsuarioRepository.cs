@@ -77,22 +77,42 @@ namespace SistemacotizacionprestamosAPI.Repositories
             return usuario;
         }
 
-        public bool Insertar(Usuario usuario)
+        public int Insertar(Usuario usuario)
         {
             using (SqlConnection conn = _context.CreateConnection())
             {
-                SqlCommand cmd = new SqlCommand("sp_InsertarUsuario", conn);
+                SqlCommand cmd = new SqlCommand(
+                    "sp_InsertarUsuario",
+                    conn);
 
                 cmd.CommandType = CommandType.StoredProcedure;
 
-                cmd.Parameters.AddWithValue("@NombreUsuario", usuario.NombreUsuario);
-                cmd.Parameters.AddWithValue("@HashPassword", usuario.HashPassword);
-                cmd.Parameters.AddWithValue("@Email", usuario.Email);
-                cmd.Parameters.AddWithValue("@Nombre", usuario.Nombre);
+                cmd.Parameters.AddWithValue(
+                    "@NombreUsuario",
+                    usuario.NombreUsuario);
+
+                cmd.Parameters.AddWithValue(
+                    "@HashPassword",
+                    usuario.HashPassword);
+
+                cmd.Parameters.AddWithValue(
+                    "@Email",
+                    usuario.Email);
+
+                cmd.Parameters.AddWithValue(
+                    "@Nombre",
+                    usuario.Nombre);
 
                 conn.Open();
 
-                return cmd.ExecuteScalar() != null;
+                object resultado = cmd.ExecuteScalar();
+
+                if (resultado == null || resultado == DBNull.Value)
+                {
+                    return 0;
+                }
+
+                return Convert.ToInt32(resultado);
             }
         }
 

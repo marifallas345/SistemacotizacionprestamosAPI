@@ -4717,3 +4717,409 @@ BEGIN
 END;
 GO
  
+ -- ============================================================
+-- TRIGGERS DE AUDITORÍA - CATÁLOGOS Y ENCUESTA
+-- ============================================================
+
+-- ============================================================
+-- GENEROS
+-- ============================================================
+CREATE TRIGGER trg_AfterInsertUpdate_Generos
+ON Generos
+AFTER INSERT, UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF NOT EXISTS (SELECT 1 FROM deleted)
+    BEGIN
+        INSERT INTO Auditorias
+        (
+            id_usuario,
+            accion,
+            tabla_afectada,
+            id_registro_afectado,
+            detalle,
+            fecha_accion
+        )
+        SELECT
+            i.usuario_creacion,
+            'INSERT',
+            'Generos',
+            i.id_genero,
+            'nombre: ' + i.nombre,
+            SYSDATETIME()
+        FROM inserted i;
+    END
+    ELSE
+    BEGIN
+        INSERT INTO Auditorias
+        (
+            id_usuario,
+            accion,
+            tabla_afectada,
+            id_registro_afectado,
+            detalle,
+            fecha_accion
+        )
+        SELECT
+            i.usuario_modificacion,
+            CASE
+                WHEN d.activo = 1 AND i.activo = 0
+                    THEN 'DELETE_LOGICO'
+
+                WHEN d.activo = 0 AND i.activo = 1
+                    THEN 'RESTORE'
+
+                ELSE 'UPDATE'
+            END,
+            'Generos',
+            i.id_genero,
+            'nombre: ' + i.nombre,
+            SYSDATETIME()
+        FROM inserted i
+        INNER JOIN deleted d
+            ON d.id_genero = i.id_genero;
+    END
+END;
+GO
+
+
+-- ============================================================
+-- HISTORIALES CREDITICIOS
+-- ============================================================
+CREATE TRIGGER trg_AfterInsertUpdate_HistorialesCrediticios
+ON HistorialesCrediticios
+AFTER INSERT, UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF NOT EXISTS (SELECT 1 FROM deleted)
+    BEGIN
+        INSERT INTO Auditorias
+        (
+            id_usuario,
+            accion,
+            tabla_afectada,
+            id_registro_afectado,
+            detalle,
+            fecha_accion
+        )
+        SELECT
+            i.usuario_creacion,
+            'INSERT',
+            'HistorialesCrediticios',
+            i.id_historial,
+            'tiene_prestamos_previos: ' +
+            CAST(i.tiene_prestamos_previos AS VARCHAR) +
+            ' | ha_morado: ' +
+            CAST(i.ha_morado AS VARCHAR),
+            SYSDATETIME()
+        FROM inserted i;
+    END
+    ELSE
+    BEGIN
+        INSERT INTO Auditorias
+        (
+            id_usuario,
+            accion,
+            tabla_afectada,
+            id_registro_afectado,
+            detalle,
+            fecha_accion
+        )
+        SELECT
+            i.usuario_modificacion,
+            CASE
+                WHEN d.activo = 1 AND i.activo = 0
+                    THEN 'DELETE_LOGICO'
+
+                WHEN d.activo = 0 AND i.activo = 1
+                    THEN 'RESTORE'
+
+                ELSE 'UPDATE'
+            END,
+            'HistorialesCrediticios',
+            i.id_historial,
+            'tiene_prestamos_previos: ' +
+            CAST(i.tiene_prestamos_previos AS VARCHAR) +
+            ' | ha_morado: ' +
+            CAST(i.ha_morado AS VARCHAR),
+            SYSDATETIME()
+        FROM inserted i
+        INNER JOIN deleted d
+            ON d.id_historial = i.id_historial;
+    END
+END;
+GO
+
+
+-- ============================================================
+-- CATEGORIAS PREGUNTA
+-- ============================================================
+CREATE TRIGGER trg_AfterInsertUpdate_CategoriasPregunta
+ON CategoriasPregunta
+AFTER INSERT, UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF NOT EXISTS (SELECT 1 FROM deleted)
+    BEGIN
+        INSERT INTO Auditorias
+        (
+            id_usuario,
+            accion,
+            tabla_afectada,
+            id_registro_afectado,
+            detalle,
+            fecha_accion
+        )
+        SELECT
+            i.usuario_creacion,
+            'INSERT',
+            'CategoriasPregunta',
+            i.id_categoria,
+            'nombre: ' + i.nombre,
+            SYSDATETIME()
+        FROM inserted i;
+    END
+    ELSE
+    BEGIN
+        INSERT INTO Auditorias
+        (
+            id_usuario,
+            accion,
+            tabla_afectada,
+            id_registro_afectado,
+            detalle,
+            fecha_accion
+        )
+        SELECT
+            i.usuario_modificacion,
+            CASE
+                WHEN d.activo = 1 AND i.activo = 0
+                    THEN 'DELETE_LOGICO'
+
+                WHEN d.activo = 0 AND i.activo = 1
+                    THEN 'RESTORE'
+
+                ELSE 'UPDATE'
+            END,
+            'CategoriasPregunta',
+            i.id_categoria,
+            'nombre: ' + i.nombre,
+            SYSDATETIME()
+        FROM inserted i
+        INNER JOIN deleted d
+            ON d.id_categoria = i.id_categoria;
+    END
+END;
+GO
+
+
+-- ============================================================
+-- PREGUNTAS
+-- ============================================================
+CREATE TRIGGER trg_AfterInsertUpdate_Preguntas
+ON Preguntas
+AFTER INSERT, UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF NOT EXISTS (SELECT 1 FROM deleted)
+    BEGIN
+        INSERT INTO Auditorias
+        (
+            id_usuario,
+            accion,
+            tabla_afectada,
+            id_registro_afectado,
+            detalle,
+            fecha_accion
+        )
+        SELECT
+            i.usuario_creacion,
+            'INSERT',
+            'Preguntas',
+            i.id_pregunta,
+            'texto: ' + i.texto +
+            ' | orden: ' + CAST(i.orden AS VARCHAR),
+            SYSDATETIME()
+        FROM inserted i;
+    END
+    ELSE
+    BEGIN
+        INSERT INTO Auditorias
+        (
+            id_usuario,
+            accion,
+            tabla_afectada,
+            id_registro_afectado,
+            detalle,
+            fecha_accion
+        )
+        SELECT
+            i.usuario_modificacion,
+            CASE
+                WHEN d.activo = 1 AND i.activo = 0
+                    THEN 'DELETE_LOGICO'
+
+                WHEN d.activo = 0 AND i.activo = 1
+                    THEN 'RESTORE'
+
+                ELSE 'UPDATE'
+            END,
+            'Preguntas',
+            i.id_pregunta,
+            'texto: ' + i.texto +
+            ' | orden: ' + CAST(i.orden AS VARCHAR),
+            SYSDATETIME()
+        FROM inserted i
+        INNER JOIN deleted d
+            ON d.id_pregunta = i.id_pregunta;
+    END
+END;
+GO
+
+
+-- ============================================================
+-- RESPUESTAS
+-- ============================================================
+CREATE TRIGGER trg_AfterInsertUpdate_Respuestas
+ON Respuestas
+AFTER INSERT, UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF NOT EXISTS (SELECT 1 FROM deleted)
+    BEGIN
+        INSERT INTO Auditorias
+        (
+            id_usuario,
+            accion,
+            tabla_afectada,
+            id_registro_afectado,
+            detalle,
+            fecha_accion
+        )
+        SELECT
+            i.usuario_creacion,
+            'INSERT',
+            'Respuestas',
+            i.id_respuesta,
+            'id_encuesta: ' +
+            CAST(i.id_encuesta AS VARCHAR) +
+            ' | id_pregunta: ' +
+            CAST(i.id_pregunta AS VARCHAR),
+            SYSDATETIME()
+        FROM inserted i;
+    END
+    ELSE
+    BEGIN
+        INSERT INTO Auditorias
+        (
+            id_usuario,
+            accion,
+            tabla_afectada,
+            id_registro_afectado,
+            detalle,
+            fecha_accion
+        )
+        SELECT
+            i.usuario_modificacion,
+            CASE
+                WHEN d.activo = 1 AND i.activo = 0
+                    THEN 'DELETE_LOGICO'
+
+                WHEN d.activo = 0 AND i.activo = 1
+                    THEN 'RESTORE'
+
+                ELSE 'UPDATE'
+            END,
+            'Respuestas',
+            i.id_respuesta,
+            'id_encuesta: ' +
+            CAST(i.id_encuesta AS VARCHAR) +
+            ' | id_pregunta: ' +
+            CAST(i.id_pregunta AS VARCHAR),
+            SYSDATETIME()
+        FROM inserted i
+        INNER JOIN deleted d
+            ON d.id_respuesta = i.id_respuesta;
+    END
+END;
+GO
+
+
+-- ============================================================
+-- USUARIOS ROLES
+-- ============================================================
+CREATE TRIGGER trg_AfterInsertUpdate_UsuariosRoles
+ON UsuariosRoles
+AFTER INSERT, UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF NOT EXISTS (SELECT 1 FROM deleted)
+    BEGIN
+        INSERT INTO Auditorias
+        (
+            id_usuario,
+            accion,
+            tabla_afectada,
+            id_registro_afectado,
+            detalle,
+            fecha_accion
+        )
+        SELECT
+            i.usuario_creacion,
+            'INSERT',
+            'UsuariosRoles',
+            i.id_usuario_rol,
+            'id_usuario: ' +
+            CAST(i.id_usuario AS VARCHAR) +
+            ' | id_rol: ' +
+            CAST(i.id_rol AS VARCHAR),
+            SYSDATETIME()
+        FROM inserted i;
+    END
+    ELSE
+    BEGIN
+        INSERT INTO Auditorias
+        (
+            id_usuario,
+            accion,
+            tabla_afectada,
+            id_registro_afectado,
+            detalle,
+            fecha_accion
+        )
+        SELECT
+            i.usuario_modificacion,
+            CASE
+                WHEN d.activo = 1 AND i.activo = 0
+                    THEN 'DELETE_LOGICO'
+
+                WHEN d.activo = 0 AND i.activo = 1
+                    THEN 'RESTORE'
+
+                ELSE 'UPDATE'
+            END,
+            'UsuariosRoles',
+            i.id_usuario_rol,
+            'id_usuario: ' +
+            CAST(i.id_usuario AS VARCHAR) +
+            ' | id_rol: ' +
+            CAST(i.id_rol AS VARCHAR),
+            SYSDATETIME()
+        FROM inserted i
+        INNER JOIN deleted d
+            ON d.id_usuario_rol = i.id_usuario_rol;
+    END
+END;
+GO

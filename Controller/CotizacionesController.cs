@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using SistemacotizacionprestamosAPI.Helpers;
 using SistemacotizacionprestamosAPI.Models;
 using SistemacotizacionprestamosAPI.Repositories;
 
@@ -15,50 +16,223 @@ namespace SistemacotizacionprestamosAPI.Controller
             _repo = repo;
         }
 
+
+        // ============================================================
+        // LISTAR COTIZACIONES
+        // SOLO ADMINISTRADOR
+        // ============================================================
+
         [HttpGet]
-        public IActionResult Get()
+        public IActionResult Get(
+            [FromQuery] bool incluirInactivos = false)
         {
-            return Ok(_repo.Listar());
+            if (!AutorizacionApiHelper.EsAdministrador(Request))
+            {
+                return Forbid();
+            }
+
+            return Ok(
+                _repo.Listar(incluirInactivos));
         }
 
-        [HttpGet("{id}")]
+
+        // ============================================================
+        // OBTENER COTIZACIÓN POR ID
+        // SOLO ADMINISTRADOR
+        // ============================================================
+
+        [HttpGet("{id:int}")]
         public IActionResult Get(int id)
         {
-            Cotizacion? cotizacion = _repo.ObtenerPorId(id);
+            if (!AutorizacionApiHelper.EsAdministrador(Request))
+            {
+                return Forbid();
+            }
+
+            if (id <= 0)
+            {
+                return BadRequest(
+                    "El ID de la cotización no es válido.");
+            }
+
+            Cotizacion? cotizacion =
+                _repo.ObtenerPorId(id);
 
             if (cotizacion == null)
-                return NotFound("La cotización no existe o está inactiva.");
+            {
+                return NotFound(
+                    "La cotización no existe o está inactiva.");
+            }
 
             return Ok(cotizacion);
         }
 
+
+        // ============================================================
+        // INSERTAR COTIZACIÓN
+        // SOLO ADMINISTRADOR
+        // ============================================================
+
         [HttpPost]
         public IActionResult Post(Cotizacion cotizacion)
         {
-            int idGenerado = _repo.Insertar(cotizacion);
+            if (!AutorizacionApiHelper.EsAdministrador(Request))
+            {
+                return Forbid();
+            }
+
+            if (cotizacion == null)
+            {
+                return BadRequest(
+                    "Los datos de la cotización son obligatorios.");
+            }
+
+            if (cotizacion.IdCliente <= 0)
+            {
+                return BadRequest(
+                    "El cliente de la cotización no es válido.");
+            }
+
+            if (cotizacion.IdTipoPrestamo <= 0)
+            {
+                return BadRequest(
+                    "El tipo de préstamo no es válido.");
+            }
+
+            if (cotizacion.IdPlazo <= 0)
+            {
+                return BadRequest(
+                    "El plazo de la cotización no es válido.");
+            }
+
+            if (cotizacion.MontoSolicitado <= 0)
+            {
+                return BadRequest(
+                    "El monto solicitado debe ser mayor que cero.");
+            }
+
+            int idGenerado =
+                _repo.Insertar(cotizacion);
 
             if (idGenerado > 0)
-                return Ok(new { Mensaje = "Cotización generada correctamente.", IdCotizacion = idGenerado });
+            {
+                return Ok(new
+                {
+                    Mensaje =
+                        "Cotización generada correctamente.",
 
-            return BadRequest();
+                    IdCotizacion =
+                        idGenerado
+                });
+            }
+
+            return BadRequest(
+                "No fue posible generar la cotización.");
         }
+
+
+        // ============================================================
+        // ACTUALIZAR COTIZACIÓN
+        // SOLO ADMINISTRADOR
+        // ============================================================
 
         [HttpPut]
         public IActionResult Put(Cotizacion cotizacion)
         {
-            if (_repo.Actualizar(cotizacion))
-                return Ok("Cotización actualizada correctamente.");
+            if (!AutorizacionApiHelper.EsAdministrador(Request))
+            {
+                return Forbid();
+            }
 
-            return BadRequest();
+            if (cotizacion == null)
+            {
+                return BadRequest(
+                    "Los datos de la cotización son obligatorios.");
+            }
+
+            if (cotizacion.IdCotizacion <= 0)
+            {
+                return BadRequest(
+                    "El ID de la cotización no es válido.");
+            }
+
+            if (cotizacion.IdEstado <= 0)
+            {
+                return BadRequest(
+                    "El estado de la cotización no es válido.");
+            }
+
+            if (cotizacion.MontoSolicitado <= 0)
+            {
+                return BadRequest(
+                    "El monto solicitado debe ser mayor que cero.");
+            }
+
+            if (_repo.Actualizar(cotizacion))
+            {
+                return Ok(
+                    "Cotización actualizada correctamente.");
+            }
+
+            return BadRequest(
+                "No fue posible actualizar la cotización.");
         }
 
-        [HttpDelete("{id}")]
+
+        // ============================================================
+        // ELIMINAR COTIZACIÓN
+        // SOLO ADMINISTRADOR
+        // ============================================================
+
+        [HttpDelete("{id:int}")]
         public IActionResult Delete(int id)
         {
-            if (_repo.Eliminar(id))
-                return Ok("Cotización eliminada correctamente.");
+            if (!AutorizacionApiHelper.EsAdministrador(Request))
+            {
+                return Forbid();
+            }
 
-            return BadRequest();
+            if (id <= 0)
+            {
+                return BadRequest(
+                    "El ID de la cotización no es válido.");
+            }
+
+            if (_repo.Eliminar(id))
+            {
+                return Ok(
+                    "Cotización eliminada correctamente.");
+            }
+
+            return BadRequest(
+                "No fue posible eliminar la cotización.");
+        }
+
+
+        // ============================================================
+        // RESTAURAR COTIZACIÓN
+        // SOLO ADMINISTRADOR
+        // ============================================================
+
+        [HttpPut("Restaurar/{id:int}")]
+        public IActionResult Restaurar(int id)
+        {
+            if (!AutorizacionApiHelper.EsAdministrador(Request))
+            {
+                return Forbid();
+            }
+
+            if (id <= 0)
+            {
+                return BadRequest(
+                    "El ID de la cotización no es válido.");
+            }
+
+            return _repo.Restaurar(id)
+                ? Ok(
+                    "Cotización restaurada correctamente.")
+                : BadRequest(
+                    "No fue posible restaurar la cotización.");
         }
     }
 }

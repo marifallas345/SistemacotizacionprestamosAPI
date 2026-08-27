@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using SistemacotizacionprestamosAPI.Helpers;
 using SistemacotizacionprestamosAPI.Models;
 using SistemacotizacionprestamosAPI.Repositories;
 
@@ -15,43 +16,148 @@ namespace SistemacotizacionprestamosAPI.Controllers
             _repo = repo;
         }
 
+
+        // ============================================================
+        // LISTAR ROLES
+        // SOLO ADMINISTRADOR
+        // ============================================================
+
         [HttpGet]
         public IActionResult Get()
         {
+            if (!AutorizacionApiHelper.EsAdministrador(Request))
+            {
+                return Forbid();
+            }
+
             return Ok(_repo.Listar());
         }
 
-        [HttpGet("{id}")]
+
+        // ============================================================
+        // OBTENER ROL POR ID
+        // SOLO ADMINISTRADOR
+        // ============================================================
+
+        [HttpGet("{id:int}")]
         public IActionResult Get(int id)
         {
-            return Ok(_repo.ObtenerPorId(id));
+            if (!AutorizacionApiHelper.EsAdministrador(Request))
+            {
+                return Forbid();
+            }
+
+            if (id <= 0)
+            {
+                return BadRequest(
+                    "El ID del rol no es válido.");
+            }
+
+            var rol = _repo.ObtenerPorId(id);
+
+            if (rol == null)
+            {
+                return NotFound(
+                    "No se encontró el rol.");
+            }
+
+            return Ok(rol);
         }
+
+
+        // ============================================================
+        // CREAR ROL
+        // SOLO ADMINISTRADOR
+        // ============================================================
 
         [HttpPost]
         public IActionResult Post(Rol rol)
         {
-            if (_repo.Insertar(rol))
-                return Ok("Rol agregado correctamente.");
+            if (!AutorizacionApiHelper.EsAdministrador(Request))
+            {
+                return Forbid();
+            }
 
-            return BadRequest();
+            if (rol == null)
+            {
+                return BadRequest(
+                    "Los datos del rol son obligatorios.");
+            }
+
+            if (_repo.Insertar(rol))
+            {
+                return Ok(
+                    "Rol agregado correctamente.");
+            }
+
+            return BadRequest(
+                "No fue posible agregar el rol.");
         }
+
+
+        // ============================================================
+        // ACTUALIZAR ROL
+        // SOLO ADMINISTRADOR
+        // ============================================================
 
         [HttpPut]
         public IActionResult Put(Rol rol)
         {
-            if (_repo.Actualizar(rol))
-                return Ok("Rol actualizado correctamente.");
+            if (!AutorizacionApiHelper.EsAdministrador(Request))
+            {
+                return Forbid();
+            }
 
-            return BadRequest();
+            if (rol == null)
+            {
+                return BadRequest(
+                    "Los datos del rol son obligatorios.");
+            }
+
+            if (rol.IdRol <= 0)
+            {
+                return BadRequest(
+                    "El ID del rol no es válido.");
+            }
+
+            if (_repo.Actualizar(rol))
+            {
+                return Ok(
+                    "Rol actualizado correctamente.");
+            }
+
+            return BadRequest(
+                "No fue posible actualizar el rol.");
         }
 
-        [HttpDelete("{id}")]
+
+        // ============================================================
+        // ELIMINAR ROL
+        // SOLO ADMINISTRADOR
+        // ============================================================
+
+        [HttpDelete("{id:int}")]
         public IActionResult Delete(int id)
         {
-            if (_repo.Eliminar(id))
-                return Ok("Rol eliminado correctamente.");
+            if (!AutorizacionApiHelper.EsAdministrador(Request))
+            {
+                return Forbid();
+            }
 
-            return BadRequest();
+            if (id <= 0)
+            {
+                return BadRequest(
+                    "El ID del rol no es válido.");
+            }
+
+            if (_repo.Eliminar(id))
+            {
+                return Ok(
+                    "Rol eliminado correctamente.");
+            }
+
+            return BadRequest(
+                "No fue posible eliminar el rol.");
         }
     }
 }

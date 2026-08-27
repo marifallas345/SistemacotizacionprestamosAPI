@@ -7,19 +7,19 @@ namespace SistemacotizacionprestamosAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class TiposPrestamoController : ControllerBase
+    public class UsuariosRolesController : ControllerBase
     {
-        private readonly TipoPrestamoRepository _repo;
+        private readonly UsuarioRolRepository _repo;
 
-        public TiposPrestamoController(
-            TipoPrestamoRepository repo)
+        public UsuariosRolesController(
+            UsuarioRolRepository repo)
         {
             _repo = repo;
         }
 
 
         // ============================================================
-        // LISTAR TIPOS DE PRÉSTAMO
+        // LISTAR RELACIONES USUARIO - ROL
         // SOLO ADMINISTRADOR
         // ============================================================
 
@@ -38,7 +38,7 @@ namespace SistemacotizacionprestamosAPI.Controllers
 
 
         // ============================================================
-        // OBTENER TIPO DE PRÉSTAMO POR ID
+        // OBTENER RELACIÓN USUARIO - ROL POR ID
         // SOLO ADMINISTRADOR
         // ============================================================
 
@@ -53,92 +53,116 @@ namespace SistemacotizacionprestamosAPI.Controllers
             if (id <= 0)
             {
                 return BadRequest(
-                    "El ID del tipo de préstamo no es válido.");
+                    "El ID de la relación usuario-rol no es válido.");
             }
 
-            var tipoPrestamo =
+            var usuarioRol =
                 _repo.ObtenerPorId(id);
 
-            if (tipoPrestamo == null)
+            if (usuarioRol == null)
             {
                 return NotFound(
-                    "No se encontró el tipo de préstamo.");
+                    "La relación usuario-rol no existe o está inactiva.");
             }
 
-            return Ok(tipoPrestamo);
+            return Ok(usuarioRol);
         }
 
 
         // ============================================================
-        // CREAR TIPO DE PRÉSTAMO
+        // CREAR RELACIÓN USUARIO - ROL
         // SOLO ADMINISTRADOR
         // ============================================================
 
         [HttpPost]
         public IActionResult Post(
-            TipoPrestamo item)
+            UsuarioRol usuarioRol)
         {
             if (!AutorizacionApiHelper.EsAdministrador(Request))
             {
                 return Forbid();
             }
 
-            if (item == null)
+            if (usuarioRol == null)
             {
                 return BadRequest(
-                    "Los datos del tipo de préstamo son obligatorios.");
+                    "Los datos de la relación usuario-rol son obligatorios.");
             }
 
-            if (_repo.Insertar(item))
+            if (usuarioRol.IdUsuario <= 0)
+            {
+                return BadRequest(
+                    "Debe indicar un usuario válido.");
+            }
+
+            if (usuarioRol.IdRol <= 0)
+            {
+                return BadRequest(
+                    "Debe indicar un rol válido.");
+            }
+
+            if (_repo.Insertar(usuarioRol))
             {
                 return Ok(
-                    "Tipo de préstamo agregado correctamente.");
+                    "Relación usuario-rol agregada correctamente.");
             }
 
             return BadRequest(
-                "No fue posible agregar el tipo de préstamo.");
+                "No fue posible agregar la relación usuario-rol.");
         }
 
 
         // ============================================================
-        // ACTUALIZAR TIPO DE PRÉSTAMO
+        // ACTUALIZAR RELACIÓN USUARIO - ROL
         // SOLO ADMINISTRADOR
         // ============================================================
 
         [HttpPut]
         public IActionResult Put(
-            TipoPrestamo item)
+            UsuarioRol usuarioRol)
         {
             if (!AutorizacionApiHelper.EsAdministrador(Request))
             {
                 return Forbid();
             }
 
-            if (item == null)
+            if (usuarioRol == null)
             {
                 return BadRequest(
-                    "Los datos del tipo de préstamo son obligatorios.");
+                    "Los datos de la relación usuario-rol son obligatorios.");
             }
 
-            if (item.IdTipoPrestamo <= 0)
+            if (usuarioRol.IdUsuarioRol <= 0)
             {
                 return BadRequest(
-                    "El ID del tipo de préstamo no es válido.");
+                    "El ID de la relación no es válido.");
             }
 
-            if (_repo.Actualizar(item))
+            if (usuarioRol.IdUsuario <= 0)
+            {
+                return BadRequest(
+                    "Debe indicar un usuario válido.");
+            }
+
+            if (usuarioRol.IdRol <= 0)
+            {
+                return BadRequest(
+                    "Debe indicar un rol válido.");
+            }
+
+            if (_repo.Actualizar(usuarioRol))
             {
                 return Ok(
-                    "Tipo de préstamo actualizado correctamente.");
+                    "Relación usuario-rol actualizada correctamente.");
             }
 
             return BadRequest(
-                "No fue posible actualizar el tipo de préstamo.");
+                "No fue posible actualizar la relación usuario-rol.");
         }
 
 
         // ============================================================
-        // ELIMINAR TIPO DE PRÉSTAMO
+        // ELIMINAR RELACIÓN USUARIO - ROL
         // SOLO ADMINISTRADOR
         // ============================================================
 
@@ -153,22 +177,22 @@ namespace SistemacotizacionprestamosAPI.Controllers
             if (id <= 0)
             {
                 return BadRequest(
-                    "El ID del tipo de préstamo no es válido.");
+                    "El ID de la relación no es válido.");
             }
 
             if (_repo.Eliminar(id))
             {
                 return Ok(
-                    "Tipo de préstamo eliminado correctamente.");
+                    "Relación usuario-rol eliminada lógicamente.");
             }
 
             return BadRequest(
-                "No fue posible eliminar el tipo de préstamo.");
+                "No fue posible eliminar la relación usuario-rol.");
         }
 
 
         // ============================================================
-        // RESTAURAR TIPO DE PRÉSTAMO
+        // RESTAURAR RELACIÓN USUARIO - ROL
         // SOLO ADMINISTRADOR
         // ============================================================
 
@@ -183,14 +207,17 @@ namespace SistemacotizacionprestamosAPI.Controllers
             if (id <= 0)
             {
                 return BadRequest(
-                    "El ID del tipo de préstamo no es válido.");
+                    "El ID de la relación no es válido.");
             }
 
-            return _repo.Restaurar(id)
-                ? Ok(
-                    "Tipo de préstamo restaurado correctamente.")
-                : BadRequest(
-                    "No fue posible restaurar el tipo de préstamo.");
+            if (_repo.Restaurar(id))
+            {
+                return Ok(
+                    "Relación usuario-rol restaurada correctamente.");
+            }
+
+            return BadRequest(
+                "No fue posible restaurar la relación usuario-rol.");
         }
     }
 }

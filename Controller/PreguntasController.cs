@@ -7,18 +7,19 @@ namespace SistemacotizacionprestamosAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class GenerosController : ControllerBase
+    public class PreguntasController : ControllerBase
     {
-        private readonly GeneroRepository _repo;
+        private readonly PreguntaRepository _repo;
 
-        public GenerosController(GeneroRepository repo)
+        public PreguntasController(
+            PreguntaRepository repo)
         {
             _repo = repo;
         }
 
 
         // ============================================================
-        // LISTAR GÉNEROS
+        // LISTAR PREGUNTAS
         // ADMINISTRADOR + ENCUESTADOR
         // ============================================================
 
@@ -26,16 +27,26 @@ namespace SistemacotizacionprestamosAPI.Controllers
         public IActionResult Get(
             [FromQuery] bool incluirInactivos = false)
         {
-            // Administrador puede ver activos e inactivos.
+            // --------------------------------------------------------
+            // ADMINISTRADOR
+            // Puede ver preguntas activas e inactivas
+            // --------------------------------------------------------
+
             if (AutorizacionApiHelper.EsAdministrador(Request))
             {
                 return Ok(
                     _repo.Listar(incluirInactivos));
             }
 
-            // Encuestador solamente puede ver activos.
+
+            // --------------------------------------------------------
+            // ENCUESTADOR
+            // Solo puede consultar preguntas activas
+            // --------------------------------------------------------
+
             if (AutorizacionApiHelper.EsEncuestador(Request))
             {
+                // No puede solicitar preguntas eliminadas.
                 if (incluirInactivos)
                 {
                     return Forbid();
@@ -45,13 +56,18 @@ namespace SistemacotizacionprestamosAPI.Controllers
                     _repo.Listar(false));
             }
 
-            // Consultor no tiene acceso a este catálogo.
+
+            // --------------------------------------------------------
+            // CONSULTOR
+            // No tiene acceso a preguntas
+            // --------------------------------------------------------
+
             return Forbid();
         }
 
 
         // ============================================================
-        // OBTENER GÉNERO POR ID
+        // OBTENER PREGUNTA POR ID
         // ADMINISTRADOR + ENCUESTADOR
         // ============================================================
 
@@ -67,104 +83,132 @@ namespace SistemacotizacionprestamosAPI.Controllers
             if (id <= 0)
             {
                 return BadRequest(
-                    "El ID del género no es válido.");
+                    "El ID de la pregunta no es válido.");
             }
 
-            var genero =
+            var pregunta =
                 _repo.ObtenerPorId(id);
 
-            if (genero == null)
+            if (pregunta == null)
             {
                 return NotFound(
-                    "El género no existe o está inactivo.");
+                    "La pregunta no existe o está inactiva.");
             }
 
-            return Ok(genero);
+            return Ok(pregunta);
         }
 
 
         // ============================================================
-        // CREAR GÉNERO
+        // CREAR PREGUNTA
         // SOLO ADMINISTRADOR
         // ============================================================
 
         [HttpPost]
         public IActionResult Post(
-            Genero genero)
+            Pregunta pregunta)
         {
             if (!AutorizacionApiHelper.EsAdministrador(Request))
             {
                 return Forbid();
             }
 
-            if (genero == null)
+            if (pregunta == null)
             {
                 return BadRequest(
-                    "Los datos del género son obligatorios.");
+                    "Los datos de la pregunta son obligatorios.");
             }
 
-            if (string.IsNullOrWhiteSpace(genero.Nombre))
+            if (string.IsNullOrWhiteSpace(
+                pregunta.Texto))
             {
                 return BadRequest(
-                    "El nombre del género es obligatorio.");
+                    "El texto de la pregunta es obligatorio.");
             }
 
-            if (_repo.Insertar(genero))
+            if (string.IsNullOrWhiteSpace(
+                pregunta.TipoControl))
+            {
+                return BadRequest(
+                    "El tipo de control es obligatorio.");
+            }
+
+            if (pregunta.IdCategoria <= 0)
+            {
+                return BadRequest(
+                    "Debe seleccionar una categoría válida.");
+            }
+
+            if (_repo.Insertar(pregunta))
             {
                 return Ok(
-                    "Género agregado correctamente.");
+                    "Pregunta agregada correctamente.");
             }
 
             return BadRequest(
-                "No fue posible agregar el género.");
+                "No fue posible agregar la pregunta.");
         }
 
 
         // ============================================================
-        // ACTUALIZAR GÉNERO
+        // ACTUALIZAR PREGUNTA
         // SOLO ADMINISTRADOR
         // ============================================================
 
         [HttpPut]
         public IActionResult Put(
-            Genero genero)
+            Pregunta pregunta)
         {
             if (!AutorizacionApiHelper.EsAdministrador(Request))
             {
                 return Forbid();
             }
 
-            if (genero == null)
+            if (pregunta == null)
             {
                 return BadRequest(
-                    "Los datos del género son obligatorios.");
+                    "Los datos de la pregunta son obligatorios.");
             }
 
-            if (genero.IdGenero <= 0)
+            if (pregunta.IdPregunta <= 0)
             {
                 return BadRequest(
-                    "El ID del género no es válido.");
+                    "El ID de la pregunta no es válido.");
             }
 
-            if (string.IsNullOrWhiteSpace(genero.Nombre))
+            if (string.IsNullOrWhiteSpace(
+                pregunta.Texto))
             {
                 return BadRequest(
-                    "El nombre del género es obligatorio.");
+                    "El texto de la pregunta es obligatorio.");
             }
 
-            if (_repo.Actualizar(genero))
+            if (string.IsNullOrWhiteSpace(
+                pregunta.TipoControl))
+            {
+                return BadRequest(
+                    "El tipo de control es obligatorio.");
+            }
+
+            if (pregunta.IdCategoria <= 0)
+            {
+                return BadRequest(
+                    "Debe seleccionar una categoría válida.");
+            }
+
+            if (_repo.Actualizar(pregunta))
             {
                 return Ok(
-                    "Género actualizado correctamente.");
+                    "Pregunta actualizada correctamente.");
             }
 
             return BadRequest(
-                "No fue posible actualizar el género.");
+                "No fue posible actualizar la pregunta.");
         }
 
 
         // ============================================================
-        // ELIMINAR GÉNERO
+        // ELIMINAR PREGUNTA
         // SOLO ADMINISTRADOR
         // ============================================================
 
@@ -179,22 +223,22 @@ namespace SistemacotizacionprestamosAPI.Controllers
             if (id <= 0)
             {
                 return BadRequest(
-                    "El ID del género no es válido.");
+                    "El ID de la pregunta no es válido.");
             }
 
             if (_repo.Eliminar(id))
             {
                 return Ok(
-                    "Género eliminado lógicamente.");
+                    "Pregunta eliminada lógicamente.");
             }
 
             return BadRequest(
-                "No fue posible eliminar el género.");
+                "No fue posible eliminar la pregunta.");
         }
 
 
         // ============================================================
-        // RESTAURAR GÉNERO
+        // RESTAURAR PREGUNTA
         // SOLO ADMINISTRADOR
         // ============================================================
 
@@ -209,17 +253,17 @@ namespace SistemacotizacionprestamosAPI.Controllers
             if (id <= 0)
             {
                 return BadRequest(
-                    "El ID del género no es válido.");
+                    "El ID de la pregunta no es válido.");
             }
 
             if (_repo.Restaurar(id))
             {
                 return Ok(
-                    "Género restaurado correctamente.");
+                    "Pregunta restaurada correctamente.");
             }
 
             return BadRequest(
-                "No fue posible restaurar el género.");
+                "No fue posible restaurar la pregunta.");
         }
     }
 }

@@ -20,92 +20,204 @@ namespace SistemacotizacionprestamosAPI.Repositories
             {
                 IdPlazo = Convert.ToInt32(dr["id_plazo"]),
                 Meses = Convert.ToInt32(dr["meses"]),
-                Descripcion = dr["descripcion"] as string,
+                Descripcion = dr["descripcion"] == DBNull.Value
+                    ? ""
+                    : dr["descripcion"].ToString()!,
                 Activo = Convert.ToBoolean(dr["activo"])
             };
         }
 
-        public List<Plazo> Listar()
+        // ============================================================
+        // LISTAR
+        // ============================================================
+
+        public List<Plazo> Listar(bool incluirInactivos = false)
         {
             List<Plazo> lista = new();
 
             using (SqlConnection conn = _context.CreateConnection())
             {
-                SqlCommand cmd = new SqlCommand("sp_ListarPlazos", conn);
+                SqlCommand cmd =
+                    new SqlCommand("sp_ListarPlazos", conn);
+
                 cmd.CommandType = CommandType.StoredProcedure;
 
-                conn.Open();
-                SqlDataReader dr = cmd.ExecuteReader();
+                cmd.Parameters.AddWithValue(
+                    "@IncluirInactivos",
+                    incluirInactivos);
 
-                while (dr.Read())
-                    lista.Add(Mapear(dr));
+                conn.Open();
+
+                using (SqlDataReader dr = cmd.ExecuteReader())
+                {
+                    while (dr.Read())
+                    {
+                        lista.Add(Mapear(dr));
+                    }
+                }
             }
 
             return lista;
         }
 
-        public Plazo ObtenerPorId(int id)
+        // ============================================================
+        // OBTENER POR ID
+        // ============================================================
+
+        public Plazo? ObtenerPorId(int id)
         {
-            Plazo item = new Plazo();
+            Plazo? plazo = null;
 
             using (SqlConnection conn = _context.CreateConnection())
             {
-                SqlCommand cmd = new SqlCommand("sp_ObtenerPlazoPorId", conn);
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@PlazoID", id);
+                SqlCommand cmd =
+                    new SqlCommand(
+                        "sp_ObtenerPlazoPorId",
+                        conn);
+
+                cmd.CommandType =
+                    CommandType.StoredProcedure;
+
+                cmd.Parameters.AddWithValue(
+                    "@PlazoID",
+                    id);
 
                 conn.Open();
-                SqlDataReader dr = cmd.ExecuteReader();
 
-                if (dr.Read())
-                    item = Mapear(dr);
+                using (SqlDataReader dr = cmd.ExecuteReader())
+                {
+                    if (dr.Read())
+                    {
+                        plazo = Mapear(dr);
+                    }
+                }
             }
 
-            return item;
+            return plazo;
         }
 
-        public bool Insertar(Plazo item)
+        // ============================================================
+        // INSERTAR
+        // ============================================================
+
+        public bool Insertar(Plazo plazo)
         {
             using (SqlConnection conn = _context.CreateConnection())
             {
-                SqlCommand cmd = new SqlCommand("sp_InsertarPlazo", conn);
-                cmd.CommandType = CommandType.StoredProcedure;
+                SqlCommand cmd =
+                    new SqlCommand(
+                        "sp_InsertarPlazo",
+                        conn);
 
-                cmd.Parameters.AddWithValue("@Meses", item.Meses);
-                cmd.Parameters.AddWithValue("@Descripcion", item.Descripcion ?? (object)DBNull.Value);
+                cmd.CommandType =
+                    CommandType.StoredProcedure;
+
+                cmd.Parameters.AddWithValue(
+                    "@Meses",
+                    plazo.Meses);
+
+                cmd.Parameters.AddWithValue(
+                    "@Descripcion",
+                    string.IsNullOrWhiteSpace(plazo.Descripcion)
+                        ? DBNull.Value
+                        : plazo.Descripcion);
 
                 conn.Open();
+
                 return cmd.ExecuteScalar() != null;
             }
         }
 
-        public bool Actualizar(Plazo item)
+        // ============================================================
+        // ACTUALIZAR
+        // ============================================================
+
+        public bool Actualizar(Plazo plazo)
         {
             using (SqlConnection conn = _context.CreateConnection())
             {
-                SqlCommand cmd = new SqlCommand("sp_ActualizarPlazo", conn);
-                cmd.CommandType = CommandType.StoredProcedure;
+                SqlCommand cmd =
+                    new SqlCommand(
+                        "sp_ActualizarPlazo",
+                        conn);
 
-                cmd.Parameters.AddWithValue("@PlazoID", item.IdPlazo);
-                cmd.Parameters.AddWithValue("@Meses", item.Meses);
-                cmd.Parameters.AddWithValue("@Descripcion", item.Descripcion ?? (object)DBNull.Value);
+                cmd.CommandType =
+                    CommandType.StoredProcedure;
+
+                cmd.Parameters.AddWithValue(
+                    "@PlazoID",
+                    plazo.IdPlazo);
+
+                cmd.Parameters.AddWithValue(
+                    "@Meses",
+                    plazo.Meses);
+
+                cmd.Parameters.AddWithValue(
+                    "@Descripcion",
+                    string.IsNullOrWhiteSpace(plazo.Descripcion)
+                        ? DBNull.Value
+                        : plazo.Descripcion);
 
                 conn.Open();
+
                 cmd.ExecuteNonQuery();
+
                 return true;
             }
         }
+
+        // ============================================================
+        // ELIMINAR LÓGICAMENTE
+        // ============================================================
 
         public bool Eliminar(int id)
         {
             using (SqlConnection conn = _context.CreateConnection())
             {
-                SqlCommand cmd = new SqlCommand("sp_EliminarLogicoPlazo", conn);
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@PlazoID", id);
+                SqlCommand cmd =
+                    new SqlCommand(
+                        "sp_EliminarLogicoPlazo",
+                        conn);
+
+                cmd.CommandType =
+                    CommandType.StoredProcedure;
+
+                cmd.Parameters.AddWithValue(
+                    "@PlazoID",
+                    id);
 
                 conn.Open();
+
                 cmd.ExecuteNonQuery();
+
+                return true;
+            }
+        }
+
+        // ============================================================
+        // RESTAURAR
+        // ============================================================
+
+        public bool Restaurar(int id)
+        {
+            using (SqlConnection conn = _context.CreateConnection())
+            {
+                SqlCommand cmd =
+                    new SqlCommand(
+                        "sp_RestaurarPlazo",
+                        conn);
+
+                cmd.CommandType =
+                    CommandType.StoredProcedure;
+
+                cmd.Parameters.AddWithValue(
+                    "@PlazoID",
+                    id);
+
+                conn.Open();
+
+                cmd.ExecuteNonQuery();
+
                 return true;
             }
         }

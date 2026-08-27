@@ -7,19 +7,19 @@ namespace SistemacotizacionprestamosAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class TiposPrestamoController : ControllerBase
+    public class RespuestasController : ControllerBase
     {
-        private readonly TipoPrestamoRepository _repo;
+        private readonly RespuestaRepository _repo;
 
-        public TiposPrestamoController(
-            TipoPrestamoRepository repo)
+        public RespuestasController(
+            RespuestaRepository repo)
         {
             _repo = repo;
         }
 
 
         // ============================================================
-        // LISTAR TIPOS DE PRÉSTAMO
+        // LISTAR RESPUESTAS
         // SOLO ADMINISTRADOR
         // ============================================================
 
@@ -38,7 +38,7 @@ namespace SistemacotizacionprestamosAPI.Controllers
 
 
         // ============================================================
-        // OBTENER TIPO DE PRÉSTAMO POR ID
+        // OBTENER RESPUESTA POR ID
         // SOLO ADMINISTRADOR
         // ============================================================
 
@@ -53,92 +53,120 @@ namespace SistemacotizacionprestamosAPI.Controllers
             if (id <= 0)
             {
                 return BadRequest(
-                    "El ID del tipo de préstamo no es válido.");
+                    "El ID de la respuesta no es válido.");
             }
 
-            var tipoPrestamo =
+            var respuesta =
                 _repo.ObtenerPorId(id);
 
-            if (tipoPrestamo == null)
+            if (respuesta == null)
             {
                 return NotFound(
-                    "No se encontró el tipo de préstamo.");
+                    "La respuesta no existe o está inactiva.");
             }
 
-            return Ok(tipoPrestamo);
+            return Ok(respuesta);
         }
 
 
         // ============================================================
-        // CREAR TIPO DE PRÉSTAMO
-        // SOLO ADMINISTRADOR
+        // INSERTAR RESPUESTA
+        // ADMINISTRADOR + ENCUESTADOR
+        //
+        // El Encuestador necesita este endpoint para registrar
+        // las respuestas de una nueva encuesta.
         // ============================================================
 
         [HttpPost]
         public IActionResult Post(
-            TipoPrestamo item)
+            Respuesta respuesta)
         {
-            if (!AutorizacionApiHelper.EsAdministrador(Request))
+            if (!AutorizacionApiHelper.EsAdministrador(Request) &&
+                !AutorizacionApiHelper.EsEncuestador(Request))
             {
                 return Forbid();
             }
 
-            if (item == null)
+            if (respuesta == null)
             {
                 return BadRequest(
-                    "Los datos del tipo de préstamo son obligatorios.");
+                    "Los datos de la respuesta son obligatorios.");
             }
 
-            if (_repo.Insertar(item))
+            if (respuesta.IdEncuesta <= 0)
+            {
+                return BadRequest(
+                    "Debe indicar una encuesta válida.");
+            }
+
+            if (respuesta.IdPregunta <= 0)
+            {
+                return BadRequest(
+                    "Debe indicar una pregunta válida.");
+            }
+
+            if (_repo.Insertar(respuesta))
             {
                 return Ok(
-                    "Tipo de préstamo agregado correctamente.");
+                    "Respuesta agregada correctamente.");
             }
 
             return BadRequest(
-                "No fue posible agregar el tipo de préstamo.");
+                "No fue posible agregar la respuesta.");
         }
 
 
         // ============================================================
-        // ACTUALIZAR TIPO DE PRÉSTAMO
+        // ACTUALIZAR RESPUESTA
         // SOLO ADMINISTRADOR
         // ============================================================
 
         [HttpPut]
         public IActionResult Put(
-            TipoPrestamo item)
+            Respuesta respuesta)
         {
             if (!AutorizacionApiHelper.EsAdministrador(Request))
             {
                 return Forbid();
             }
 
-            if (item == null)
+            if (respuesta == null)
             {
                 return BadRequest(
-                    "Los datos del tipo de préstamo son obligatorios.");
+                    "Los datos de la respuesta son obligatorios.");
             }
 
-            if (item.IdTipoPrestamo <= 0)
+            if (respuesta.IdRespuesta <= 0)
             {
                 return BadRequest(
-                    "El ID del tipo de préstamo no es válido.");
+                    "El ID de la respuesta no es válido.");
             }
 
-            if (_repo.Actualizar(item))
+            if (respuesta.IdEncuesta <= 0)
+            {
+                return BadRequest(
+                    "Debe indicar una encuesta válida.");
+            }
+
+            if (respuesta.IdPregunta <= 0)
+            {
+                return BadRequest(
+                    "Debe indicar una pregunta válida.");
+            }
+
+            if (_repo.Actualizar(respuesta))
             {
                 return Ok(
-                    "Tipo de préstamo actualizado correctamente.");
+                    "Respuesta actualizada correctamente.");
             }
 
             return BadRequest(
-                "No fue posible actualizar el tipo de préstamo.");
+                "No fue posible actualizar la respuesta.");
         }
 
 
         // ============================================================
-        // ELIMINAR TIPO DE PRÉSTAMO
+        // ELIMINAR RESPUESTA
         // SOLO ADMINISTRADOR
         // ============================================================
 
@@ -153,22 +181,22 @@ namespace SistemacotizacionprestamosAPI.Controllers
             if (id <= 0)
             {
                 return BadRequest(
-                    "El ID del tipo de préstamo no es válido.");
+                    "El ID de la respuesta no es válido.");
             }
 
             if (_repo.Eliminar(id))
             {
                 return Ok(
-                    "Tipo de préstamo eliminado correctamente.");
+                    "Respuesta eliminada lógicamente.");
             }
 
             return BadRequest(
-                "No fue posible eliminar el tipo de préstamo.");
+                "No fue posible eliminar la respuesta.");
         }
 
 
         // ============================================================
-        // RESTAURAR TIPO DE PRÉSTAMO
+        // RESTAURAR RESPUESTA
         // SOLO ADMINISTRADOR
         // ============================================================
 
@@ -183,14 +211,17 @@ namespace SistemacotizacionprestamosAPI.Controllers
             if (id <= 0)
             {
                 return BadRequest(
-                    "El ID del tipo de préstamo no es válido.");
+                    "El ID de la respuesta no es válido.");
             }
 
-            return _repo.Restaurar(id)
-                ? Ok(
-                    "Tipo de préstamo restaurado correctamente.")
-                : BadRequest(
-                    "No fue posible restaurar el tipo de préstamo.");
+            if (_repo.Restaurar(id))
+            {
+                return Ok(
+                    "Respuesta restaurada correctamente.");
+            }
+
+            return BadRequest(
+                "No fue posible restaurar la respuesta.");
         }
     }
 }

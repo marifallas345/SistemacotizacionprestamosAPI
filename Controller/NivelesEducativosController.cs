@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using SistemacotizacionprestamosAPI.Helpers;
 using SistemacotizacionprestamosAPI.Models;
 using SistemacotizacionprestamosAPI.Repositories;
 
@@ -10,45 +11,153 @@ namespace SistemacotizacionprestamosAPI.Controllers
     {
         private readonly NivelEducativoRepository _repo;
 
-        public NivelesEducativosController(NivelEducativoRepository repo)
+        public NivelesEducativosController(
+            NivelEducativoRepository repo)
         {
             _repo = repo;
         }
 
+
+        // ============================================================
+        // LISTAR NIVELES EDUCATIVOS
+        // ADMINISTRADOR + ENCUESTADOR
+        // ============================================================
+
         [HttpGet]
         public IActionResult Get()
         {
+            if (!AutorizacionApiHelper.EsAdministrador(Request) &&
+                !AutorizacionApiHelper.EsEncuestador(Request))
+            {
+                return Forbid();
+            }
+
             return Ok(_repo.Listar());
         }
 
-        [HttpGet("{id}")]
+
+        // ============================================================
+        // OBTENER NIVEL EDUCATIVO POR ID
+        // ADMINISTRADOR + ENCUESTADOR
+        // ============================================================
+
+        [HttpGet("{id:int}")]
         public IActionResult Get(int id)
         {
-            return Ok(_repo.ObtenerPorId(id));
+            if (!AutorizacionApiHelper.EsAdministrador(Request) &&
+                !AutorizacionApiHelper.EsEncuestador(Request))
+            {
+                return Forbid();
+            }
+
+            if (id <= 0)
+            {
+                return BadRequest(
+                    "El ID del nivel educativo no es válido.");
+            }
+
+            var nivel =
+                _repo.ObtenerPorId(id);
+
+            if (nivel == null)
+            {
+                return NotFound(
+                    "No se encontró el nivel educativo.");
+            }
+
+            return Ok(nivel);
         }
+
+
+        // ============================================================
+        // CREAR NIVEL EDUCATIVO
+        // SOLO ADMINISTRADOR
+        // ============================================================
 
         [HttpPost]
-        public IActionResult Post(NivelEducativo nivel)
+        public IActionResult Post(
+            NivelEducativo nivel)
         {
-            return _repo.Insertar(nivel)
-                ? Ok("Nivel educativo agregado correctamente.")
-                : BadRequest();
+            if (!AutorizacionApiHelper.EsAdministrador(Request))
+            {
+                return Forbid();
+            }
+
+            if (nivel == null)
+            {
+                return BadRequest(
+                    "Los datos del nivel educativo son obligatorios.");
+            }
+
+            if (_repo.Insertar(nivel))
+            {
+                return Ok(
+                    "Nivel educativo agregado correctamente.");
+            }
+
+            return BadRequest(
+                "No fue posible agregar el nivel educativo.");
         }
+
+
+        // ============================================================
+        // ACTUALIZAR NIVEL EDUCATIVO
+        // SOLO ADMINISTRADOR
+        // ============================================================
 
         [HttpPut]
-        public IActionResult Put(NivelEducativo nivel)
+        public IActionResult Put(
+            NivelEducativo nivel)
         {
-            return _repo.Actualizar(nivel)
-                ? Ok("Nivel educativo actualizado correctamente.")
-                : BadRequest();
+            if (!AutorizacionApiHelper.EsAdministrador(Request))
+            {
+                return Forbid();
+            }
+
+            if (nivel == null)
+            {
+                return BadRequest(
+                    "Los datos del nivel educativo son obligatorios.");
+            }
+
+            if (_repo.Actualizar(nivel))
+            {
+                return Ok(
+                    "Nivel educativo actualizado correctamente.");
+            }
+
+            return BadRequest(
+                "No fue posible actualizar el nivel educativo.");
         }
 
-        [HttpDelete("{id}")]
+
+        // ============================================================
+        // ELIMINAR NIVEL EDUCATIVO
+        // SOLO ADMINISTRADOR
+        // ============================================================
+
+        [HttpDelete("{id:int}")]
         public IActionResult Delete(int id)
         {
-            return _repo.Eliminar(id)
-                ? Ok("Nivel educativo eliminado correctamente.")
-                : BadRequest();
+            if (!AutorizacionApiHelper.EsAdministrador(Request))
+            {
+                return Forbid();
+            }
+
+            if (id <= 0)
+            {
+                return BadRequest(
+                    "El ID del nivel educativo no es válido.");
+            }
+
+            if (_repo.Eliminar(id))
+            {
+                return Ok(
+                    "Nivel educativo eliminado correctamente.");
+            }
+
+            return BadRequest(
+                "No fue posible eliminar el nivel educativo.");
         }
     }
 }
